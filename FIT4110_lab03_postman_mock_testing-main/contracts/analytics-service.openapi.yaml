@@ -1,0 +1,74 @@
+openapi: 3.1.0
+info:
+  title: Smart Campus — Analytics & Reporting Service API
+  version: 1.0.0
+  description: Mock server cho Analytics Service nhận feed sự kiện và tính toán KPI vận hành toàn Smart Campus.
+servers:
+  - url: http://localhost:4015
+    description: Prism mock server cho Analytics Service
+tags:
+  - name: analytics
+    description: Sự kiện và thống kê KPI
+  - name: system
+    description: Trạng thái hệ thống
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [system]
+      summary: Health check Analytics Service
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              example:
+                status: ok
+                service: analytics-service
+                version: 1.0.0
+
+  /analytics/events:
+    post:
+      tags: [analytics]
+      summary: Core Business đẩy event alert / access policy sang Analytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              eventType: ALERT_CREATED
+              eventId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2babc
+              payload:
+                alertType: UNAUTHORIZED_ACCESS
+                severity: HIGH
+              occurredAt: "2026-05-10T08:00:00Z"
+      responses:
+        "202":
+          description: Event đã được nhận để xử lý bất đồng bộ
+          content:
+            application/json:
+              example:
+                accepted: true
+                eventId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2babc
+                timestamp: "2026-05-10T08:00:01Z"
+
+  /analytics/kpis:
+    get:
+      tags: [analytics]
+      summary: Lấy thống kê KPI an ninh & vận hành Smart Campus
+      responses:
+        "200":
+          description: Báo cáo chỉ số KPI
+          content:
+            application/json:
+              example:
+                totalAlertsToday: 15
+                openAlerts: 2
+                resolvedAlerts: 13
+                totalAccessEntries: 1250
+                allowRate: 98.4
+                averageResponseTimeMs: 145

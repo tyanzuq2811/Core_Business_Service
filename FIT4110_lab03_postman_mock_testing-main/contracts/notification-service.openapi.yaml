@@ -1,0 +1,83 @@
+openapi: 3.1.0
+info:
+  title: Smart Campus — Notification Service API
+  version: 1.0.0
+  description: Mock server cho Notification Service phụ trách gửi email, SMS, mobile push khi Core Business có cảnh báo.
+servers:
+  - url: http://localhost:4014
+    description: Prism mock server cho Notification Service
+tags:
+  - name: notifications
+    description: Gửi và quản lý thông báo
+  - name: system
+    description: Trạng thái hệ thống
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [system]
+      summary: Health check Notification Service
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              example:
+                status: ok
+                service: notification-service
+                version: 1.0.0
+
+  /notifications/send:
+    post:
+      tags: [notifications]
+      summary: Core Business gọi gửi thông báo khẩn cấp (SMS / Email / Push)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              alertId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2babc
+              channels: [EMAIL, SMS, PUSH]
+              recipients: ["security-team@campus.local", "+84901234567"]
+              title: CẢNH BÁO TRUY CẬP TRÁI PHÉP
+              body: Phát hiện truy cập trái phép tại cổng chính A lúc 08:00:00
+      responses:
+        "200":
+          description: Thông báo đã được đưa vào hàng chờ gửi
+          content:
+            application/json:
+              example:
+                notificationId: NOTIF-20260510-001
+                status: SENT
+                sentChannels: [EMAIL, SMS, PUSH]
+                queuedAt: "2026-05-10T08:00:01Z"
+
+  /notifications/history:
+    get:
+      tags: [notifications]
+      summary: Xem lịch sử thông báo đã phát
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          example: 10
+      responses:
+        "200":
+          description: Danh sách thông báo
+          content:
+            application/json:
+              example:
+                items:
+                  - notificationId: NOTIF-20260510-001
+                    alertId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2babc
+                    channels: [EMAIL, SMS]
+                    title: CẢNH BÁO TRUY CẬP TRÁI PHÉP
+                    status: DELIVERED
+                    createdAt: "2026-05-10T08:00:01Z"

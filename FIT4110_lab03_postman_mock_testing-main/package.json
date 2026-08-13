@@ -4,11 +4,16 @@
   "private": true,
   "description": "FIT4110 Lab 03 - Postman, Mock Server, Contract Testing, Newman CI",
   "scripts": {
-    "mock:iot": "prism mock contracts/iot-ingestion.openapi.yaml -p 4010 --host 0.0.0.0",
+    "mock:core": "prism mock contracts/core-business.openapi.yaml -p 4010 --host 0.0.0.0",
     "mock:vision": "prism mock contracts/ai-vision.openapi.yaml -p 4011 --host 0.0.0.0",
-    "mock:all": "sh -c 'npm run mock:iot & npm run mock:vision & wait'",
+    "mock:iot": "prism mock contracts/iot-ingestion.openapi.yaml -p 4012 --host 0.0.0.0",
+    "mock:gate": "prism mock contracts/access-gate.openapi.yaml -p 4013 --host 0.0.0.0",
+    "mock:notif": "prism mock contracts/notification-service.openapi.yaml -p 4014 --host 0.0.0.0",
+    "mock:analytics": "prism mock contracts/analytics-service.openapi.yaml -p 4015 --host 0.0.0.0",
     "lint:contracts": "spectral lint contracts/*.yaml --fail-severity error",
     "test:mock": "newman run postman/collections/FIT4110_lab03_iot_ingestion.postman_collection.json -e postman/environments/FIT4110_lab03_mock.postman_environment.json --reporters cli,junit --reporter-junit-export reports/newman-report-mock.xml",
+    "test:core:mock": "newman run postman/collections/FIT4110_lab03_core_business.postman_collection.json -e postman/environments/FIT4110_lab03_core_mock.postman_environment.json --reporters cli,junit,htmlextra --reporter-junit-export reports/newman-report-core-mock.xml --reporter-htmlextra-export reports/newman-report-core.html",
+    "test:core:local": "newman run postman/collections/FIT4110_lab03_core_business.postman_collection.json -e postman/environments/FIT4110_lab03_core_local.postman_environment.json --reporters cli,junit --reporter-junit-export reports/newman-report-core-local.xml",
     "test:local": "newman run postman/collections/FIT4110_lab03_iot_ingestion.postman_collection.json -e postman/environments/FIT4110_lab03_local.postman_environment.json --reporters cli,junit --reporter-junit-export reports/newman-report-local.xml",
     "test:html": "newman run postman/collections/FIT4110_lab03_iot_ingestion.postman_collection.json -e postman/environments/FIT4110_lab03_mock.postman_environment.json --reporters cli,htmlextra --reporter-htmlextra-export reports/newman-report.html",
     "test:ci": "npm run lint:contracts && npm run test:mock"

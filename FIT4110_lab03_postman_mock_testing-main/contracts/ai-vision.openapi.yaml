@@ -37,6 +37,47 @@ paths:
                     service: ai-vision
                     version: 0.3.0
 
+  /vision/face-match:
+    post:
+      tags: [vision]
+      operationId: faceMatch
+      summary: So khớp khuôn mặt
+      description: Endpoint so khớp nhận diện khuôn mặt giữa camera và cơ sở dữ liệu.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                image_url:
+                  type: string
+                  example: https://example.com/frame.jpg
+      responses:
+        "200":
+          description: Kết quả so khớp thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [match_status, confidence, person_id]
+                properties:
+                  match_status:
+                    type: string
+                    example: MATCH
+                  confidence:
+                    type: number
+                    example: 0.98
+                  person_id:
+                    type: string
+                    example: STUDENT-2026-001
+              examples:
+                matched:
+                  value:
+                    match_status: MATCH
+                    confidence: 0.98
+                    person_id: STUDENT-2026-001
+
   /detect:
     post:
       tags: [vision]

@@ -1,6 +1,21 @@
 ID,Folder,Endpoint,Method,Scenario,Input file/body,Expected status,Expected response check,Type,Pass/Fail,Evidence
-TC01,Functional,/health,GET,Service is alive,-,200,status=ok,functional,,
-TC02,Functional,/readings,POST,Create reading happy path,mock-data/sensor-reading-valid.json,201,"has reading_id, accepted=true",functional,,
-TC03,Negative,/readings,POST,Missing device_id,mock-data/sensor-reading-invalid-missing-device.json,400,Problem Details,negative,,
-TC04,Auth,/readings,POST,Missing token,mock-data/sensor-reading-valid.json,401,Problem Details,auth,,
-TC05,Boundary,/readings,POST,High temperature boundary,mock-data/sensor-reading-boundary.json,201/400,documented behavior,boundary,,
+TC01,00_Health,/health,GET,Service alive check,-,200,status=ok & service name,functional,Pass,newman-report-core-mock.xml
+TC02,01_Functional,/alerts,POST,Create alert happy path,valid-alert-payload,201,has id & status=OPEN,functional,Pass,newman-report-core-mock.xml
+TC03,01_Functional,/alerts,GET,List alerts paginated,limit=10,200,has items array & hasMore,functional,Pass,newman-report-core-mock.xml
+TC04,01_Functional,/alerts/recent,GET,Get recent alerts,limit=5,200,has items array,functional,Pass,newman-report-core-mock.xml
+TC05,01_Functional,/alerts/{alertId},GET,Get alert by UUID,valid UUID,200,has alert object details,functional,Pass,newman-report-core-mock.xml
+TC06,01_Functional,/access/check,POST,Realtime policy check,valid access request,200,has decisionId & result ALLOW/DENY,functional,Pass,newman-report-core-mock.xml
+TC07,01_Functional,/policies/access/{policyId},GET,Get access policy,POL-001,200,has policyId & effect,functional,Pass,newman-report-core-mock.xml
+TC08,01_Functional,/decisions/{decisionId},GET,Get decision audit history,valid UUID,200,has decision audit record,functional,Pass,newman-report-core-mock.xml
+TC09,01_Functional,/events,POST,Ingest campus event,valid SensorEvent,201,has eventId & acceptedAt,functional,Pass,newman-report-core-mock.xml
+TC10,02_Auth,/alerts,GET,Valid token accepted,Bearer validToken,200,Success response 200,auth,Pass,newman-report-core-mock.xml
+TC11,02_Auth,/alerts,POST,Missing token rejected,No token,401/403,Problem Details / Skipped on mock,auth,Pass,newman-report-core-mock.xml
+TC12,02_Auth,/alerts,POST,Invalid token rejected,Bearer invalidToken,401/403,Problem Details / Skipped on mock,auth,Pass,newman-report-core-mock.xml
+TC13,03_Negative,/alerts,POST,Missing required fields,invalid payload,400/422,Problem Details schema,negative,Pass,newman-report-core-mock.xml
+TC14,03_Negative,/access/check,POST,Invalid cardId pattern,invalid cardId,400/422,Problem Details schema,negative,Pass,newman-report-core-mock.xml
+TC15,03_Negative,/alerts/{alertId},GET,Non-existent UUID,00000000-...,404,Problem Details 404/client error,negative,Pass,newman-report-core-mock.xml
+TC16,04_Boundary_Reliability,/alerts,GET,Min limit boundary,limit=1,200,Success response 200,boundary,Pass,newman-report-core-mock.xml
+TC17,04_Boundary_Reliability,/alerts,GET,Max limit boundary,limit=100,200,Success response 200,boundary,Pass,newman-report-core-mock.xml
+TC18,04_Boundary_Reliability,/alerts,GET,Limit out of range,limit=101,400/422,Client error response,boundary,Pass,newman-report-core-mock.xml
+TC19,05_Consumer_side_Smoke,/vision/face-match,POST,Core calls AI Vision mock,valid image_url,200/201,has match_status,consumer_smoke,Pass,newman-report-core-mock.xml
+TC20,06_Local_only_NonFunctional,/access/check,POST,Access check SLA <= 200ms,valid request,200,responseTime < 200ms on local,non_functional,Pass,newman-report-core-mock.xml

@@ -1,0 +1,117 @@
+openapi: 3.1.0
+info:
+  title: Smart Campus — Access Gate Service API
+  version: 1.0.0
+  description: Mock server cho Access Gate Service kiểm soát cổng ra/vào và log quẹt thẻ.
+servers:
+  - url: http://localhost:4013
+    description: Prism mock server cho Access Gate
+tags:
+  - name: gates
+    description: Quản lý và điều khiển cổng ra/vào
+  - name: logs
+    description: Lịch sử quẹt thẻ
+  - name: system
+    description: Trạng thái hệ thống
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [system]
+      summary: Health check Access Gate
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              example:
+                status: ok
+                service: access-gate
+                version: 1.0.0
+
+  /gates:
+    get:
+      tags: [gates]
+      summary: Lấy danh sách cổng kiểm soát
+      responses:
+        "200":
+          description: Danh sách cổng
+          content:
+            application/json:
+              example:
+                items:
+                  - gateId: GATE-01
+                    name: Cổng chính A
+                    location: Tòa nhà A
+                    status: ACTIVE
+                    mode: AUTOMATIC
+                  - gateId: GATE-02
+                    name: Cổng phụ B
+                    location: Tòa nhà B
+                    status: ACTIVE
+                    mode: AUTOMATIC
+
+  /gates/{gateId}/unlock:
+    post:
+      tags: [gates]
+      summary: Core Business gọi điều khiển mở cổng khẩn cấp
+      parameters:
+        - name: gateId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: GATE-01
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              reason: EMERGENCY_FIRE_ALARM
+              durationSeconds: 300
+      responses:
+        "200":
+          description: Cổng đã được mở
+          content:
+            application/json:
+              example:
+                gateId: GATE-01
+                status: UNLOCKED
+                message: Mở cổng thành công do cảnh báo báo cháy
+                unlockedAt: "2026-05-10T08:00:00Z"
+
+  /access/logs:
+    get:
+      tags: [logs]
+      summary: Lấy lịch sử quẹt thẻ tại các cổng
+      parameters:
+        - name: gateId
+          in: query
+          required: false
+          schema:
+            type: string
+          example: GATE-01
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          example: 10
+      responses:
+        "200":
+          description: Danh sách log quẹt thẻ
+          content:
+            application/json:
+              example:
+                items:
+                  - logId: LOG-20260510-001
+                    cardId: RFID-2026-001
+                    gateId: GATE-01
+                    direction: IN
+                    result: ALLOW
+                    timestamp: "2026-05-10T08:00:00Z"
