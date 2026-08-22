@@ -1,0 +1,30 @@
+﻿extends:
+  - spectral:oas
+
+rules:
+  campus-openapi-31:
+    description: OpenAPI 3.1.0 specification
+    message: "File phai khai bao openapi: 3.1.0."
+    severity: error
+    given: "$.openapi"
+    then:
+      function: pattern
+      functionOptions:
+        match: ^3\.1\.0$
+
+  campus-require-problem-schema:
+    description: API phai co schema Problem cho response loi.
+    message: "Thieu components.schemas.Problem."
+    severity: warn
+    given: "$.components.schemas.Problem"
+    then:
+      function: truthy
+
+  campus-operation-operationId:
+    description: Moi operation can operationId.
+    message: "Operation thieu operationId."
+    severity: warn
+    given: "$.paths[*][get,post,put,patch,delete]"
+    then:
+      field: operationId
+      function: truthy

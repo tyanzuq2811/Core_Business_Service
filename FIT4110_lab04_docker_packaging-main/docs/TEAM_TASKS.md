@@ -1,34 +1,27 @@
-# TEAM_TASKS.md – Việc cần làm theo nhóm
+# TEAM_TASKS.md — Nhiệm Vụ Hoàn Thành (Core Business Team)
 
-Mỗi nhóm bắt đầu từ repo mẫu này và thay phần IoT bằng service của mình.
-
----
-
-## Việc chung cho mọi nhóm
-
-- [ ] Copy contract từ Lab 03 vào thư mục `contracts/`.
-- [ ] Đảm bảo service có `GET /health`.
-- [ ] Viết hoặc cập nhật `Dockerfile`.
-- [ ] Viết `.dockerignore`.
-- [ ] Viết `.env.example`.
-- [ ] Viết `RUN_LOCAL.md`.
-- [ ] Build image.
-- [ ] Run container.
-- [ ] Chạy Postman Collection từ Lab 03 trên container.
-- [ ] Xuất Newman report.
-- [ ] Chụp bằng chứng `/health` hoặc log container.
-- [ ] Ghi tag image đã push.
+Bảng tổng hợp các đầu việc đã hoàn thành cho **Core Business Service** (`team-core`) trong **FIT4110 Lab 04**:
 
 ---
 
-## Gợi ý theo service
+## Danh mục công việc đã thực hiện
 
-| Service | Điểm cần chú ý |
-|---|---|
-| IoT Ingestion | API nhận telemetry, auth token, `/health`, test boundary nhiệt độ |
-| Camera Stream | Dùng `opencv-python-headless`, chuẩn bị 1 ảnh mẫu, chưa cần RTSP thật |
-| Access Gate | Nếu chưa có DB trong Lab 04, dùng in-memory hoặc DB ngoài; Compose để Buổi 5 |
-| AI Vision | Có thể dùng mock model hoặc YOLOv8n nhỏ; kiểm soát dung lượng image |
-| Analytics | Nhận event JSON giả; TimescaleDB để Buổi 5 |
-| Core Business | Policy evaluation chạy bằng config/env |
-| Notification | Channel mock là đủ; không commit Telegram/email token thật |
+- [x] **Hợp đồng OpenAPI 3.1**: Chuẩn hóa `contracts/core-business.openapi.yaml` định nghĩa đầy đủ các endpoint nghiệp vụ, schema `Alert`, `AccessPolicy`, `DecisionAudit`, mã lỗi RFC 9457 `ProblemDetails`.
+- [x] **Mã nguồn Backend**: Xây dựng backend FastAPI tại `src/core_app/main.py` đáp ứng 100% các endpoint trong hợp đồng.
+- [x] **Endpoint Healthcheck**: Đảm bảo `GET /health` phản hồi `status: ok` phục vụ giám sát container.
+- [x] **Dockerfile chuẩn công nghiệp**:
+  - [x] Multi-stage build (Builder & Runtime).
+  - [x] Chạy ứng dụng bằng non-root user `appuser`.
+  - [x] Tích hợp Docker native `HEALTHCHECK`.
+  - [x] Cấu hình động qua biến môi trường `${APP_HOST}`, `${APP_PORT}`.
+- [x] **Tối ưu Build Context**: Thiết lập `.dockerignore` loại bỏ `node_modules`, `.venv`, cache, logs và reports.
+- [x] **Chống Hardcode**: Cung cấp `.env.example` chuẩn, sẵn sàng chạy ngay khi clone.
+- [x] **Tài liệu Hướng dẫn**: Viết chi tiết `RUN_LOCAL.md` và `README.md`.
+- [x] **Kiểm thử Tự động**:
+  - [x] Kiểm tra linter contract với Spectral (`npm run lint:openapi` pass 0 lỗi).
+  - [x] Build Docker image `fit4110/core-business:lab04`.
+  - [x] Khởi chạy container `fit4110-core-lab04`.
+  - [x] Chạy toàn bộ Postman test suite (24 requests, 38 assertions pass 100%).
+  - [x] Xuất báo cáo Newman XML và HTML trong thư mục `reports/`.
+- [x] **CI/CD Workflow**: Thiết lập GitHub Actions workflow `.github/workflows/docker-newman.yml` cho Core Business Service.
+- [x] **Gán nhãn Image**: Tag quy ước `v0.1.0-core-business`.

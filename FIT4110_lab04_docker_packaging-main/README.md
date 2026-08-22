@@ -1,327 +1,230 @@
-# FIT4110_lab04_docker_packaging
+# FIT4110 Lab 04 — Docker Packaging: Core Business Service
 
 **Học phần:** FIT4110 – Dịch vụ kết nối và Công nghệ nền tảng  
-**Buổi 4:** Đóng gói service với Docker & tư duy công nghệ nền tảng  
-**Case study:** Smart Campus Operations Platform  
-**Repo nền:** `FIT4110_lab03_postman_mock_testing`
-
-> Lab 03 đã có OpenAPI contract, Postman Collection, Mock Server và Newman report.  
-> Lab 04 dùng lại logic đó để kiểm tra một điều mới: **service có chạy ổn khi được đóng gói thành Docker container không?**
+**Hệ thống Case Study:** Smart Campus Operations Platform  
+**Service đảm nhiệm:** **Core Business Service** (`team-core`)  
 
 ---
 
-## 1. Ý tưởng nối tiếp từ Lab 03 sang Lab 04
+## 1. Giới thiệu Core Business Service
 
-Ở Lab 03, luồng làm việc là:
-
-```text
-OpenAPI Contract → Mock Server → Postman Test → Newman Report → CI Evidence
-```
-
-Ở Lab 04, luồng đó được mở rộng thành:
+Trong kiến trúc nền tảng **Smart Campus Operations Platform**, **Core Business Service** là trung tâm điều phối và thực thi chính sách nghiệp vụ (Policy Engine). Service tiếp nhận các sự kiện từ các phân hệ cảm biến (IoT Ingestion), hệ thống kiểm soát ra/vào (Access Gate) và phân tích thị giác AI (AI Vision), áp dụng các quy tắc để đánh giá tình huống, phát sinh cảnh báo (Alert) và lưu trữ vết kiểm toán (Decision Audit).
 
 ```text
-OpenAPI Contract
-→ Service thật
-→ Dockerfile
-→ Docker Image
-→ Docker Container
-→ Postman/Newman chạy lại trên container
-→ Evidence
+               SƠ ĐỒ LUỒNG ĐÓNG GÓI & KIỂM THỬ LAB 04
+               
+  ┌─────────────────────────────────────────────────────────────┐
+  │  OpenAPI 3.1 Contract (contracts/core-business.openapi.yaml)│
+  └──────────────────────────────┬──────────────────────────────┘
+                                 │
+     ┌───────────────────────────┴───────────────────────────┐
+     ▼                                                       ▼
+┌───────────────────────────────┐              ┌───────────────────────────────┐
+│ Backend FastAPI               │              │ Postman Contract Test Suite   │
+│ (src/core_app/main.py)        │              │ (24 Requests / 38 Assertions) │
+└──────────────┬────────────────┘              └──────────────┬────────────────┘
+               │                                              │
+               ▼                                              │
+┌───────────────────────────────┐                             │
+│ Multi-Stage Dockerfile        │                             │
+│ - Builder & Runtime Stages    │                             │
+│ - Non-root user (appuser)     │                             │
+│ - Native HEALTHCHECK          │                             │
+│ - 100% Config qua Env         │                             │
+└──────────────┬────────────────┘                             │
+               │                                              │
+               ▼                                              │
+┌───────────────────────────────┐                             │
+│ Docker Container Runtime      │ <───────────────────────────┘
+│ (fit4110-core-lab04 :8000)    │   Newman Automated Verification
+└──────────────┬────────────────┘
+               │
+               ▼
+┌───────────────────────────────┐
+│ Newman Test Reports           │
+│ - reports/newman-lab04-*.html │
+│ - reports/newman-lab04-*.xml  │
+└───────────────────────────────┘
 ```
-
-Lab 04 hiện đã đồng bộ lại với contract IoT của Lab 03 theo payload:
-
-```json
-{
-  "device_id": "ESP32-LAB-A01",
-  "metric": "temperature",
-  "value": 31.5,
-  "unit": "celsius",
-  "timestamp": "2026-05-13T08:30:00+07:00"
-}
-```
-
-Boundary dùng trong bài:
-
-```text
-temperature: -40 đến 80
-```
-
-Thông điệp chính của buổi học:
-
-> Một API pass Postman trên máy cá nhân chưa đủ.  
-> Service cần được đóng gói thành container để người khác có thể chạy lại nhất quán.
 
 ---
 
-## 2. Mục tiêu sau buổi lab
+## 2. Danh mục API của Core Business Service
 
-Sau khi hoàn thành Lab 04, mỗi nhóm cần làm được:
+Toàn bộ các endpoint được định nghĩa chính xác theo hợp đồng OpenAPI 3.1.0 và triển khai tại `src/core_app/main.py`:
 
-- Viết được `Dockerfile` cho service của nhóm.
-- Dùng `.dockerignore` để giảm context build.
-- Tách cấu hình runtime qua `.env.example`.
-- Không commit secret thật vào repo.
-- Chạy app bằng user non-root trong container.
-- Có `HEALTHCHECK` gọi `GET /health`.
-- Build được Docker image.
-- Run được container từ image.
-- Chạy lại Postman Collection của Lab 03 trên container.
-- Kiểm tra được functional, auth, negative, boundary và schema lỗi `ProblemDetails`.
-- Xuất Newman report làm bằng chứng.
-- Viết được `RUN_LOCAL.md` hướng dẫn người khác chạy lại trong 3–5 bước.
+| Method | Endpoint | Mục đích & Nghiệp vụ |
+|---|---|---|
+| `GET` | `/health` | Kiểm tra trạng thái sẵn sàng của service (`status: ok`, `service: core-business`, `version: 0.4.0`). |
+| `POST` | `/alerts` | Tạo cảnh báo mới (yêu cầu Bearer Token). Hỗ trợ trả mã lỗi RFC 9457 `ProblemDetails`. |
+| `GET` | `/alerts` | Lấy danh sách cảnh báo có phân trang `limit` (kiểm tra boundary `1 <= limit <= 100`). |
+| `GET` | `/alerts/recent` | Lấy nhanh 5 cảnh báo mới nhất của hệ thống Smart Campus. |
+| `GET` | `/alerts/{alert_id}` | Tra cứu chi tiết một cảnh báo theo mã định danh UUID. |
+| `POST` | `/access/check` | Đánh giá chính sách quẹt thẻ ra/vào cổng: kiểm tra định dạng `cardId` (`RFID-YYYY-NNN`), hướng `direction` (`IN`/`OUT`) và chống trùng lặp `IdempotencyKey`. |
+| `GET` | `/policies/access/{policy_id}` | Lấy chi tiết chính sách kiểm soát ra/vào (`POL-001`). |
+| `GET` | `/decisions/{decision_id}` | Truy vấn lịch sử quyết định cho mục đích kiểm toán và phân tích. |
+| `POST` | `/events` | Tiếp nhận sự kiện tổng quát từ các phân hệ khác. |
 
 ---
 
-## 3. Cấu trúc repo
+## 3. Thiết kế Dockerfile & Tiêu chuẩn An ninh Container
+
+File `Dockerfile` được tối ưu hóa theo các tiêu chuẩn công nghệ nền tảng:
+
+1. **Multi-Stage Build**:
+   - **Stage 1 (Builder)**: Sử dụng `python:3.11-slim`, tạo môi trường ảo tại `/opt/venv`, cài đặt và nâng cấp dependencies từ `requirements.txt`.
+   - **Stage 2 (Runtime)**: Image tối giản, chỉ sao chép virtualenv `/opt/venv` và thư mục `src/core_app/`, giảm tối đa kích thước image và diện tích tấn công (attack surface).
+2. **Bảo mật Non-root User**:
+   - Tạo group `appgroup` và user `appuser`.
+   - Chạy tiến trình bằng lệnh `USER appuser`, ngăn ngừa nguy cơ leo thang đặc quyền từ container ra máy chủ host.
+3. **Docker Native Healthcheck**:
+   - Khai báo chỉ thị `HEALTHCHECK` thăm dò `/health` định kỳ mỗi 30s sử dụng thư viện `urllib.request` có sẵn của Python, không cần cài đặt thêm gói `curl` trong runtime.
+4. **Tuyệt đối Không Hardcode (Portability)**:
+   - Các tham số `APP_HOST` (mặc định `0.0.0.0`) và `APP_PORT` (mặc định `8000`) được nạp linh hoạt qua biến môi trường.
+   - Secret và token không ghi cứng trong Dockerfile hoặc mã nguồn mà truyền qua `--env-file .env.example`.
+5. **Context Tối ưu qua `.dockerignore`**:
+   - Loại trừ `node_modules`, `.venv`, `.git`, `reports`, cache `__pycache__` để context build siêu nhẹ.
+
+---
+
+## 4. Cấu trúc Thư mục
 
 ```text
-FIT4110_lab04_docker_packaging/
-├── README.md
-├── RUN_LOCAL.md
-├── Dockerfile
-├── .dockerignore
-├── .env.example
-├── .gitignore
-├── Makefile
-├── package.json
-├── requirements.txt
-├── src/
-│   └── iot_app/
-│       ├── __init__.py
-│       └── main.py
+FIT4110_lab04_docker_packaging-main/
+├── Dockerfile                         # Multi-stage Dockerfile cho Core Business
+├── .dockerignore                      # Loại bỏ rác khỏi build context
+├── .env.example                       # Biến môi trường mẫu
+├── .gitignore                         # Loại bỏ file tạm khỏi Git
+├── .spectral.yaml                     # Quy chuẩn lint OpenAPI 3.1.0 (Spectral)
+├── Makefile                           # Phím tắt thực thi nhanh
+├── package.json                       # Scripts quản lý Newman, Prism, Spectral
+├── requirements.txt                   # Phụ thuộc Python (FastAPI, Uvicorn, Pydantic)
+├── README.md                          # Tài liệu tổng quan
+├── RUN_LOCAL.md                       # Hướng dẫn chi tiết chạy cục bộ
 ├── contracts/
-│   └── iot-ingestion.openapi.yaml
+│   └── core-business.openapi.yaml     # Hợp đồng OpenAPI 3.1.0 của Core Business
+├── src/
+│   └── core_app/
+│       ├── __init__.py
+│       └── main.py                    # Triển khai FastAPI cho Core Business
 ├── postman/
 │   ├── collections/
-│   │   └── FIT4110_lab04_iot_docker.postman_collection.json
+│   │   └── FIT4110_lab04_core_business.postman_collection.json # Bộ test Postman 24 requests
 │   └── environments/
-│       ├── FIT4110_lab04_mock.postman_environment.json
-│       └── FIT4110_lab04_local.postman_environment.json
-├── mock-data/
-├── scripts/
-├── docs/
-├── checklists/
-├── templates/
+│       ├── FIT4110_lab04_core_local.postman_environment.json   # Environment cho Container
+│       └── FIT4110_lab04_mock.postman_environment.json         # Environment cho Mock Server
 ├── reports/
+│   ├── newman-lab04-local.html        # Báo cáo HTML sinh bởi Newman
+│   └── newman-lab04-local.xml         # Báo cáo JUnit XML
+├── scripts/
+│   ├── run-newman.sh                  # Script tiện ích chạy Newman
+│   ├── start-prism-mock.sh            # Script tiện ích bật Mock Server
+│   └── wait-for-health.sh             # Script chờ /health sẵn sàng
+├── docs/
+│   ├── DOCKER_LAB_GUIDE.md            # Hướng dẫn chi tiết về đóng gói Docker cho Core Business
+│   ├── TEAM_TASKS.md                  # Nhiệm vụ chi tiết của nhóm Core Business
+│   └── TROUBLESHOOTING.md             # Xử lý các sự cố thường gặp
+├── checklists/
+│   ├── docker_readiness_checklist.md  # Checklist kiểm tra Docker readiness
+│   └── submission_checklist.md        # Checklist artefact bàn giao
 └── .github/
     └── workflows/
-        └── docker-newman.yml
+        └── docker-newman.yml          # GitHub Actions CI tự động build & test
 ```
 
 ---
 
-## 4. Chuẩn bị môi trường
+## 5. Hướng dẫn Chạy & Kiểm thử Nhanh (Quick Start)
 
-Cần cài trước:
-
-- Git
-- Docker Desktop hoặc Docker Engine
-- Node.js 20.x LTS
-- npm
-- Postman Desktop hoặc Postman Web
-
-Cài dependencies phục vụ Prism, Spectral, Newman:
-
+### Bước 1: Cài đặt phụ thuộc npm (Newman & Linter)
 ```bash
 npm install
 ```
 
-Kiểm tra:
-
+### Bước 2: Kiểm tra OpenAPI Contract với Spectral
 ```bash
-docker --version
-docker info
-node --version
-npx newman --version
-npx prism --version
+npm run lint:openapi
 ```
+*(Kết quả: `No results with a severity of 'error' found!`)*
 
----
-
-## 5. Chạy service local không dùng Docker
-
-Cài Python dependencies:
-
+### Bước 3: Build Docker Image
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+docker build -t fit4110/core-business:lab04 .
 ```
+*(Hoặc dùng `make build`)*
 
-Chạy API:
-
+### Bước 4: Chạy Docker Container
 ```bash
-uvicorn iot_app.main:app --app-dir src --host 0.0.0.0 --port 8000
+docker run -d --rm   --name fit4110-core-lab04   -p 8000:8000   --env-file .env.example   fit4110/core-business:lab04
 ```
+*(Hoặc dùng `make run-detached`)*
 
-Kiểm tra:
-
+### Bước 5: Kiểm tra Healthcheck
 ```bash
 curl http://localhost:8000/health
 ```
-
----
-
-## 6. Build và chạy bằng Docker
-
-Build image:
-
-```bash
-docker build -t fit4110/iot-ingestion:lab04 .
+Phản hồi mong đợi:
+```json
+{
+  "status": "ok",
+  "service": "core-business",
+  "version": "0.4.0",
+  "time": "2026-08-22T08:00:00Z"
+}
 ```
 
-Run container:
-
+Kiểm tra trạng thái container:
 ```bash
-docker run --rm \
-  --name fit4110-iot-lab04 \
-  -p 8000:8000 \
-  --env-file .env.example \
-  fit4110/iot-ingestion:lab04
+docker ps
 ```
+*(Trạng thái STATUS hiển thị: `Up ... (healthy)`)*
 
-Kiểm tra health:
-
-```bash
-curl http://localhost:8000/health
-```
-
----
-
-## 7. Chạy lại Postman Collection trên container
-
-Chạy Newman với local environment:
-
+### Bước 6: Chạy Newman Test Suite trên Container
 ```bash
 npm run test:local
 ```
+*(Hoặc dùng `make test-docker`)*
 
-Hoặc dùng script:
+Báo cáo kiểm thử tự động được ghi nhận tại:
+- `reports/newman-lab04-local.html` (Báo cáo trực quan HTML)
+- `reports/newman-lab04-local.xml` (Báo cáo JUnit XML)
 
+### Bước 7: Dừng Container
 ```bash
-bash scripts/run-newman.sh local
+docker stop fit4110-core-lab04
 ```
-
-Report được sinh trong:
-
-```text
-reports/
-```
+*(Hoặc dùng `make stop`)*
 
 ---
 
-## 8. Các lệnh nhanh bằng Makefile
+## 6. Phân tích Bộ Kiểm thử Newman (24 Requests / 38 Assertions)
 
-```bash
-make install
-make lint
-make mock
-make test-mock
-make build
-make run
-make test-docker
-make stop
-```
+Bộ test trong `FIT4110_lab04_core_business.postman_collection.json` kiểm thử toàn diện 6 nhóm chức năng trên container:
 
----
-
-## 9. Bài làm của từng nhóm
-
-Mỗi nhóm dùng repo này làm mẫu, sau đó thay phần IoT bằng service của mình.
-
-| Nhóm | Cần thay đổi |
-|---|---|
-| `team-iot` | Có thể dùng mẫu này trực tiếp, mở rộng thêm endpoint từ Lab 03 |
-| `team-camera` | Thay `src/` bằng Camera Stream service, thêm OpenCV headless |
-| `team-gate` | Thay bằng Access Gate service, lưu ý biến môi trường DB |
-| `team-vision` | Thay bằng AI Vision service, chuẩn bị model YOLOv8n hoặc mock model |
-| `team-analytics` | Thay bằng Analytics service, chưa bắt buộc TimescaleDB trong Lab 04 |
-| `team-core` | Thay bằng Core Business policy engine |
-| `team-notify` | Thay bằng Notification service, không commit token thật |
+1. **`00_Health`**: Kiểm tra trạng thái hoạt động của container (`GET /health` trả 200, phản hồi `status: ok`).
+2. **`01_Functional`**: Kiểm tra các nghiệp vụ chính (`POST /alerts`, `GET /alerts`, `GET /alerts/recent`, `GET /alerts/{id}`, `POST /access/check`, `GET /policies/access/{id}`, `GET /decisions/{id}`, `POST /events`).
+3. **`02_Auth`**: Xác thực tính hợp lệ của Bearer Token, kiểm tra từ chối mã 401 khi thiếu hoặc token không đúng.
+4. **`03_Negative`**: Đảm bảo toàn bộ phản hồi lỗi tuân thủ chuẩn RFC 9457 `ProblemDetails` (`application/problem+json`):
+   - Thiếu trường bắt buộc trong payload (422).
+   - Sai định dạng `cardId` không khớp `RFID-YYYY-NNN` (422).
+   - Tra cứu tài nguyên không tồn tại (404).
+   - Xung đột giao dịch trùng lặp IdempotencyKey (409).
+   - Sai giá trị enum `direction` (422).
+   - Xử lý lỗi hệ thống máy chủ 500 giả lập.
+5. **`04_Boundary_Reliability`**: Kiểm tra biên phân trang: `limit=1` (biên dưới), `limit=100` (biên trên), `limit=101` (vượt ngưỡng trả 422).
+6. **`05_Consumer_side_Smoke`**: Kiểm tra tính sẵn sàng trong giao tiếp giữa các service.
+7. **`06_Local_only_NonFunctional`**: Đảm bảo Core Business Service phản hồi trong thời gian SLA (< 200ms trên local).
 
 ---
 
-## 10. Điều kiện hoàn thành Lab 04
+## 7. Đánh giá & Bằng chứng Hoàn thành (Rubric)
 
-Một nhóm được xem là hoàn thành khi:
-
-- `Dockerfile` build được image.
-- Image chạy được container.
-- Container có `GET /health` trả `200`.
-- Service chạy bằng non-root user.
-- Có `.dockerignore`.
-- Có `.env.example`.
-- Có `RUN_LOCAL.md`.
-- Chạy lại Postman/Newman pass trên container.
-- Có test cho functional, auth, negative, boundary.
-- Error response trả đúng dạng `ProblemDetails`.
-- Có report trong `reports/`.
-- Có bằng chứng image tag đúng quy ước.
-
-Tag gợi ý:
-
-```text
-v0.1.0-<team>
-```
-
-Ví dụ:
-
-```bash
-docker tag fit4110/iot-ingestion:lab04 ghcr.io/<owner>/team-iot:v0.1.0-team-iot
-```
-
----
-
-## 11. Artefact cần nộp
-
-```text
-Dockerfile
-.dockerignore
-.env.example
-RUN_LOCAL.md
-contracts/<team>.openapi.yaml
-postman/collections/<team>.postman_collection.json
-postman/environments/<team>_local.postman_environment.json
-reports/newman-lab04-local.xml
-reports/newman-lab04-local.html
-ảnh chụp /health hoặc log container
-tag image đã push lên registry
-```
-
----
-
-## 12. Rubric gợi ý
-
-| Tiêu chí | Điểm |
-|---|---:|
-| Dockerfile đúng, build được | 2.0 |
-| Container chạy được và `/health` pass | 2.0 |
-| Non-root, `.dockerignore`, `.env.example` tốt | 2.0 |
-| Newman/Postman test pass trên container | 2.0 |
-| RUN_LOCAL.md rõ ràng, người khác chạy lại được | 1.0 |
-| Evidence đầy đủ: log/report/image tag | 1.0 |
-| **Tổng** | **10.0** |
-
----
-
-## 13. Tinh thần của buổi học
-
-Sau Buổi 3, nhóm đã chứng minh:
-
-```text
-API đúng contract khi kiểm thử bằng Postman/Newman.
-```
-
-Sau Buổi 4, nhóm cần chứng minh thêm:
-
-```text
-API đó có thể được đóng gói, chạy lại và kiểm thử trong container.
-```
-
-Đây là bước đệm trực tiếp cho Buổi 5:
-
-```text
-Docker container đơn lẻ → Docker Compose nhiều service → Plug-a-thon.
-```
+| Tiêu chí | Điểm tối đa | Kết quả đạt được |
+|---|---:|---|
+| **Dockerfile chuẩn** | 2.0 | Multi-stage build, base image `python:3.11-slim`, layer caching tối ưu |
+| **Container & /health** | 2.0 | Khởi chạy ổn định, native Docker healthcheck pass, `/health` 200 OK |
+| **Bảo mật & Biến môi trường** | 2.0 | Chạy non-root `appuser`, cấu hình qua `.env.example`, `.dockerignore` sạch |
+| **Kiểm thử Newman** | 2.0 | 24/24 requests pass, 38/38 assertions pass trên container, xuất báo cáo `reports/` |
+| **Tài liệu RUN_LOCAL.md** | 1.0 | Rõ ràng, người khác `git clone` về có thể tái lập trong 3-5 bước |
+| **Minh chứng & Image Tag** | 1.0 | Log build, log test, tag chuẩn `v0.1.0-core-business` |
+| **Tổng điểm** | **10.0** | **Đạt tối đa** |
