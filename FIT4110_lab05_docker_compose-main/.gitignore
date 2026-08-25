@@ -1,0 +1,86 @@
+# ================================================================
+# Smart Campus Operations Platform — Core Business Service
+# Git Ignore Configuration for Lab 05 Docker Compose Stack
+# ================================================================
+
+# --- 1. Environment & Secrets (TUYỆT ĐỐI KHÔNG PUSH) ---
+.env
+.env.*
+*.env
+*.env.local
+!*.env.example
+
+# --- 2. Python & Virtual Environments ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# --- 3. Node.js & Newman CI Dependencies ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+.npm/
+
+# --- 4. Docker Volumes & Persistent Data ---
+db-data/
+postgres-data/
+*.log
+docker-compose.override.yml
+
+# --- 5. IDE & Code Editors ---
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+*.bak
+
+# --- 6. Operating System Artifacts ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# --- 7. Temporary & Scratch Files ---
+*.tmp
+*.temp
+scratch/

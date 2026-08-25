@@ -1,42 +1,37 @@
 """
-Simple AI service mock for Lab 05.
+Mock AI Vision Service cho Lab 05 Docker Compose.
 
-This service exposes two endpoints:
+Giả lập service AI Vision (nhận diện khuôn mặt) của nhóm AI Vision.
+Core Business gọi service này qua mạng nội bộ Docker để kiểm tra kết nối liên service.
 
-* `GET /health` – returns status, service name and version.
-* `POST /predict` – returns a dummy list of detected objects and confidences.
-
-You can replace this file with your actual inference code (e.g. YOLOv8 model).
+Endpoints:
+  GET  /health            → trạng thái service
+  POST /vision/face-match → giả lập kết quả nhận diện khuôn mặt
 """
 
+import os
+from datetime import datetime, timezone
 from fastapi import FastAPI
-from pydantic import BaseModel
-from typing import List
 
-SERVICE_NAME = "ai-service"
-SERVICE_VERSION = "0.5.0"
+SERVICE_NAME = os.getenv("SERVICE_NAME", "ai-vision-mock")
+SERVICE_VERSION = os.getenv("SERVICE_VERSION", "0.5.0")
 
-app = FastAPI(
-    title="FIT4110 Lab 05 - AI Service",
-    version=SERVICE_VERSION,
-    description="Mock AI service used in Docker Compose stack.",
-)
-
-
-class Prediction(BaseModel):
-    objects: List[str]
-    confidence: List[float]
+app = FastAPI(title="Mock AI Vision Service", version=SERVICE_VERSION)
 
 
 @app.get("/health")
-def health() -> dict:
+def health():
     return {"status": "ok", "service": SERVICE_NAME, "version": SERVICE_VERSION}
 
 
-@app.post("/predict", response_model=Prediction)
-def predict() -> Prediction:
-    # This dummy implementation always returns two objects
-    return Prediction(objects=["person", "bicycle"], confidence=[0.98, 0.85])
+@app.post("/vision/face-match")
+def face_match():
+    return {
+        "match_status": "MATCHED",
+        "confidence": 0.96,
+        "person_id": "STU-2026-001",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 if __name__ == "__main__":

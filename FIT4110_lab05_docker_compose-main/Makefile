@@ -1,31 +1,36 @@
-.PHONY: install lint build run compose-up compose-down logs test-compose
+.PHONY: install lint build run compose-up compose-down compose-down-clean logs test-compose health
 
-# Install Node dependencies for Prism/Spectral/Newman
 install:
 	npm install
 
-# Lint OpenAPI contracts with Spectral
 lint:
 	npx spectral lint contracts/*.yaml
 
-# Build Docker image for API only
 build:
-	docker build -t fit4110/iot-ingestion:lab05 .
+	docker build -t smartcampus/core-business:latest .
 
-# Run API container standalone (not via compose)
 run:
-	docker run --rm --name fit4110-api-lab05 -p 8000:8000 --env-file .env.example fit4110/iot-ingestion:lab05
+	docker run --rm --name smartcampus-core-service -p 8001:8000 --env-file .env smartcampus/core-business:latest
 
-# Compose commands
 compose-up:
 	docker compose up -d --build
 
 compose-down:
 	docker compose down
 
+compose-down-clean:
+	docker compose down -v
+
 logs:
 	docker compose logs -f
 
-# Run Newman tests on compose stack
+health:
+	@echo "=== 1. API Core Business (host 8001) ==="
+	curl -s http://localhost:8001/health | python -m json.tool
+
+status:
+	@echo "=== LAN Network Integration Status (All Partners) ==="
+	curl -s http://localhost:8001/integrations/status | python -m json.tool
+
 test-compose:
 	npm run test:compose

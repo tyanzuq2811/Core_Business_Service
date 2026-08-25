@@ -1,16 +1,17 @@
-# Readiness Checklist – Lab 05
+# Readiness Checklist – Core Business Service Stack (Smart Campus)
 
-Đây là danh sách kiểm tra (checklist) để đảm bảo stack Docker Compose của bạn đã sẵn sàng trước khi gửi bài. Hãy tick vào mỗi mục sau khi hoàn thành.
+Đây là danh sách kiểm tra để đảm bảo stack Docker Compose đã sẵn sàng trước khi vận hành và tham gia Plug-a-thon.
 
-- [ ] **Database ready:** container DB đã chạy và phản hồi `pg_isready`. Kiểm tra bằng `docker exec -it fit4110-db-lab05 pg_isready -U $POSTGRES_USER`.
-- [ ] **AI service ready:** container AI service trả về `200` cho endpoint `/health` và `/predict` hoạt động.
-- [ ] **API ready:** container API trả `200` cho `/health` và có thể tạo/lấy readings khi token hợp lệ.
-- [ ] **Environment variables:** `.env` đã được thiết lập đúng (APP_PORT, POSTGRES_USER, AUTH_TOKEN,…). Không sử dụng secret thật; lưu secret vào `.env` cục bộ, commit `.env.example`.
-- [ ] **Network & Ports:** mạng `team-internal` hoạt động; API gọi được AI bằng hostname `ai-service`; ports 8000 (API), 9000 (AI) và 5432 (DB) được map đúng.
-- [ ] **Image tags:** bạn đã build image với tag `v0.1.0-<team>` và push lên registry (ghcr.io hoặc Docker Hub). Xác nhận rằng tag xuất hiện trong registry.
+- [x] **Database ready:** container `smartcampus-core-db` (PostgreSQL 15) đã chạy và phản hồi `pg_isready`.
+- [x] **API Core Business ready:** container `smartcampus-core-service` trả `200` cho `http://localhost:8001/health` và Newman test pass 38/38.
+- [x] **Environment variables:** `.env` và `.env.example` đã thiết lập đúng (`HOST_API_PORT=8001`, `APP_PORT=8000`, `AI_VISION_URL`, `IOT_SERVICE_URL`, `GATE_SERVICE_URL`, `ANALYTICS_SERVICE_URL`, `NOTIFICATION_SERVICE_URL`). Không sử dụng secret thật.
+- [x] **Network & Ports:** mạng `smartcampus-network` kết nối các service; port 8001 (API) và 5433 (DB) được map đúng (Host:Container).
+- [x] **Non-root user:** Container API chạy bằng `appuser`, không dùng root.
+- [x] **Healthcheck & Startup Order:** Service API phụ thuộc vào Database với `condition: service_healthy`.
+- [x] **LAN Dashboard ready:** Endpoint `GET /integrations/status` kiểm tra đồng thời toàn bộ đối tác trong mạng LAN.
 
-Ghi chú thêm những vấn đề gặp phải hoặc điều chỉnh tại đây:
-
+Ghi chú:
 ```
-- Mô tả…
+- Tên container đã được chuẩn hoá toàn dự án: smartcampus-core-service & smartcampus-core-db.
+- Sẵn sàng giao tiếp với các nhóm AI Vision, IoT, Access Gate, Analytics, Notification qua mạng LAN.
 ```
