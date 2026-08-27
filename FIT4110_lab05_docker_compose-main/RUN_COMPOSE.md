@@ -40,22 +40,37 @@ NOTIFICATION_SERVICE_URL=http://192.168.137.40:8000
 
 ---
 
-## 3. Các Lệnh Vận Hành Nhanh
+## 3. Trung Tâm Điều Khiển Trực Quan (Live Web Dashboard)
+
+Mở trực tiếp trên trình duyệt Web: **`http://localhost:8001`** (hoặc `http://<IP_MÁY_BẠN>:8001`)
+
+* 🌐 **Tab 1 - Radar Mạng LAN:** Xem trực quan trạng thái 5 nhóm (ONLINE/OFFLINE), độ trễ Ping (ms).
+* 📥 **Tab 2 - Dữ Liệu Nhận Về (Inbound):** Theo dõi Cảnh Báo An Ninh, Lịch Sử Quẹt Thẻ Gate, Luồng Sự Kiện IoT.
+* 📤 **Tab 3 - Tương Tác Gửi Đi (Outbound):** Form tra cứu thẻ bên Gate, gọi so khớp khuôn mặt bên AI Vision, kiểm tra Analytics.
+* 🎮 **Tab 4 - Trình Giả Lập & Bắn Dữ Liệu:** Bắn thử nghiệm Event, Alert, Swipe chỉ với 1 click chuột!
+* 📋 **Tab 5 - Hợp Đồng API:** Tra cứu danh mục API của Core Business để chia sẻ cho các nhóm.
+
+---
+
+## 4. Các Lệnh Vận Hành Nhanh
 
 ```powershell
 # 1. Khởi động Stack Core Business (API + PostgreSQL)
-docker compose up -d --build
+docker compose up -d
 
-# 2. Kiểm tra trạng thái kết nối tới TOÀN BỘ 5 đối tác trong mạng LAN
+# 2. Mở Web Dashboard trên trình duyệt
+Start-Process http://localhost:8001
+
+# 3. Kiểm tra trạng thái kết nối tới TOÀN BỘ 5 đối tác trong mạng LAN (bằng CLI)
 curl http://localhost:8001/integrations/status
 
-# 3. Xem logs thời gian thực khi các nhóm gọi API sang Core
+# 4. Xem logs thời gian thực khi các nhóm gọi API sang Core
 docker compose logs -f api
 
-# 4. Chạy kiểm thử tự động Newman
+# 5. Chạy kiểm thử tự động Newman (29/29 kịch bản kiểm thử)
 npm run test:compose
 
-# 5. Dừng hệ thống
+# 6. Dừng hệ thống
 docker compose down
 ```
 

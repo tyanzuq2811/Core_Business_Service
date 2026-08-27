@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 import requests
 from fastapi import FastAPI, Header, HTTPException, Request, Response, status
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 # Đọc cấu hình từ biến môi trường (mạng LAN Plug-a-thon)
@@ -14,13 +14,13 @@ SERVICE_NAME = os.getenv("SERVICE_NAME", "core-business")
 SERVICE_VERSION = os.getenv("SERVICE_VERSION", "0.5.0")
 
 # Địa chỉ IP/URL các nhóm trong mạng LAN (Cấu hình qua .env)
-AI_VISION_URL = os.getenv("AI_VISION_URL", "http://192.168.137.1:8000")
+AI_VISION_URL = os.getenv("AI_VISION_URL", "http://192.168.1.41:8000")
 AI_VISION_AUTH_TOKEN = os.getenv("AI_VISION_AUTH_TOKEN", "local-dev-token-vision")
-IOT_SERVICE_URL = os.getenv("IOT_SERVICE_URL", "http://192.168.137.10:8000")
-GATE_SERVICE_URL = os.getenv("GATE_SERVICE_URL", "http://192.168.137.89:8000")
+IOT_SERVICE_URL = os.getenv("IOT_SERVICE_URL", "http://192.168.1.11:8000")
+GATE_SERVICE_URL = os.getenv("GATE_SERVICE_URL", "http://192.168.1.31:8000")
 GATE_AUTH_TOKEN = os.getenv("GATE_AUTH_TOKEN", "dev-secret-token")
-ANALYTICS_SERVICE_URL = os.getenv("ANALYTICS_SERVICE_URL", "http://192.168.137.249:8000")
-NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "http://192.168.137.40:8000")
+ANALYTICS_SERVICE_URL = os.getenv("ANALYTICS_SERVICE_URL", "http://192.168.1.51:8000")
+NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "http://192.168.1.61:8000")
 
 app = FastAPI(
     title="Smart Campus — Core Business Service API",
@@ -64,6 +64,23 @@ DECISIONS_DB: Dict[str, Dict[str, Any]] = {
         "evaluatedAt": "2026-05-10T08:00:00Z",
     }
 }
+
+EVENTS_DB: List[Dict[str, Any]] = [
+    {
+        "eventId": "0196fb3d-4ad7-7d1e-9f49-5d5148d2e001",
+        "sourceService": "iot-ingestion",
+        "eventType": "SENSOR_TELEMETRY",
+        "payload": {"sensorId": "ENV-01", "temperature": 24.5, "humidity": 65.0},
+        "receivedAt": "2026-08-27T07:10:00Z",
+    },
+    {
+        "eventId": "0196fb3d-4ad7-7d1e-9f49-5d5148d2e002",
+        "sourceService": "ai-vision",
+        "eventType": "OBJECT_DETECTION",
+        "payload": {"cameraId": "cam-gate-01", "detectedObjects": ["person", "car"], "confidence": 0.94},
+        "receivedAt": "2026-08-27T07:12:00Z",
+    }
+]
 
 PROCESSED_IDEMPOTENCY_KEYS = set()
 
@@ -132,6 +149,7 @@ class EventIngestPayload(BaseModel):
     eventType: Optional[str] = "generic.event"
     eventId: Optional[str] = None
     sourceService: Optional[str] = None
+    timestamp: Optional[str] = None
     payload: Optional[Dict[str, Any]] = None
 
     class Config:
@@ -246,6 +264,62 @@ async def get_alert_detail(
     return ALERTS_DB[alert_id]
 
 
+@app.post("/alerts/{alert_id}/resolve", tags=["alerts"])
+async def resolve_alert(alert_id: str):
+    """Đánh dấu cảnh báo đã được giải quyết (RESOLVED)."""
+    if alert_id in ALERTS_DB:
+        ALERTS_DB[alert_id]["status"] = "RESOLVED"
+        ALERTS_DB[alert_id]["resolvedAt"] = datetime.now(timezone.utc).isoformat()
+        return ALERTS_DB[alert_id]
+    raise HTTPException(status_code=404, detail="Alert not found")
+
+
+@app.get("/decisions", tags=["access-policy"])
+async def list_decisions():
+    """Lấy danh sách tất cả các quyết định quẹt thẻ phục vụ Dashboard & Analytics."""
+    return list(DECISIONS_DB.values())
+
+
+@app.get("/events", tags=["events"])
+async def list_events():
+    """Lấy danh sách tất cả sự kiện đã nhận phục vụ Dashboard."""
+    return EVENTS_DB
+
+
+@app.post("/dashboard/clear-data", tags=["dashboard"])
+async def clear_live_data():
+    """Xóa sạch dữ liệu trong bộ nhớ để nhận 100% dữ liệu thật từ các nhóm."""
+    global EVENTS_DB, ALERTS_DB, DECISIONS_DB
+    EVENTS_DB.clear()
+    ALERTS_DB = {
+        "0196fb3d-4ad7-7d1e-9f49-5d5148d2babc": {
+            "id": "0196fb3d-4ad7-7d1e-9f49-5d5148d2babc",
+            "sourceService": "core-business",
+            "alertType": "SYSTEM_READY",
+            "severity": "LOW",
+            "message": "Hệ thống sẵn sàng tiếp nhận dữ liệu thật từ các nhóm mạng LAN",
+            "status": "OPEN",
+            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "resolvedAt": None,
+        }
+    }
+    DECISIONS_DB = {
+        "0196fb3d-4ad7-7d1e-9f49-bbb148d2b002": {
+            "decisionId": "0196fb3d-4ad7-7d1e-9f49-bbb148d2b002",
+            "cardId": "RFID-2026-001",
+            "gateId": "GATE-01",
+            "result": "ALLOW",
+            "reasonCode": "VALID_CARD",
+            "policyId": "POL-001",
+            "evaluatedAt": datetime.now(timezone.utc).isoformat(),
+        }
+    }
+    return {
+        "status": "ok",
+        "message": "Đã làm sạch toàn bộ dữ liệu! Sẵn sàng tiếp nhận dữ liệu thật từ các nhóm."
+    }
+
+
 @app.post("/access/check", tags=["access-policy"])
 async def check_access(
     payload: AccessCheckPayload,
@@ -288,6 +362,7 @@ async def check_access(
         "decisionId": decision_id,
         "cardId": payload.cardId,
         "gateId": payload.gateId,
+        "direction": payload.direction,
         "result": "ALLOW",
         "reasonCode": "VALID_CARD",
         "policyId": "POL-001",
@@ -332,12 +407,62 @@ async def get_decision_detail(
 
 
 @app.post("/events", status_code=status.HTTP_201_CREATED, tags=["events"])
-async def ingest_event(payload: EventIngestPayload):
-    event_id = payload.eventId or str(uuid.uuid4())
+async def ingest_event(request: Request):
+    """
+    Tiếp nhận sự kiện từ IoT Ingestion (SensorEvent / sensor.reading.created)
+    hoặc các phân hệ khác theo chuẩn OpenAPI contract.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    event_id = body.get("eventId") or str(uuid.uuid4())
+    event_type = body.get("eventType") or "sensor.reading.created"
+    source = body.get("source") or body.get("sourceService") or "iot-ingestion"
+    occurred_at = body.get("occurredAt") or body.get("timestamp") or datetime.now(timezone.utc).isoformat()
+    correlation_id = body.get("correlationId")
+
+    # Trích xuất dữ liệu cảm biến (hỗ trợ cả dạng phẳng lẫn dạng lồng data / payload)
+    data_payload = body.get("data") or body.get("payload") or {}
+    if not data_payload and any(k in body for k in ("deviceId", "metric", "value", "unit", "locationId")):
+        data_payload = {
+            "deviceId": body.get("deviceId"),
+            "metric": body.get("metric"),
+            "value": body.get("value"),
+            "unit": body.get("unit"),
+            "locationId": body.get("locationId"),
+        }
+
+    event_record = {
+        "eventId": event_id,
+        "sourceService": source,
+        "eventType": event_type,
+        "correlationId": correlation_id,
+        "payload": data_payload,
+        "timestamp": occurred_at,
+        "receivedAt": datetime.now(timezone.utc).isoformat(),
+    }
+    EVENTS_DB.insert(0, event_record)
+
+    # Tự động tạo Alert nếu cảm biến báo quá ngưỡng (Core Business Rule Engine)
+    metric = data_payload.get("metric")
+    val = data_payload.get("value")
+    if event_type == "sensor.threshold.exceeded" or (metric == "temperature" and isinstance(val, (int, float)) and val > 40.0):
+        alert_id = str(uuid.uuid4())
+        ALERTS_DB[alert_id] = {
+            "id": alert_id,
+            "sourceService": "iot-ingestion",
+            "alertType": "OVERHEAT_CRITICAL" if val and val > 50 else "TEMPERATURE_HIGH",
+            "severity": "CRITICAL" if val and val > 50 else "HIGH",
+            "message": f"Cảm biến {data_payload.get('deviceId', 'SENSOR')} tại {data_payload.get('locationId', 'Campus')} đo được {val}°C (vượt ngưỡng an toàn)!",
+            "status": "OPEN",
+            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "resolvedAt": None,
+        }
+
     return {
         "eventId": event_id,
-        "eventType": payload.eventType,
-        "status": "ACCEPTED",
         "acceptedAt": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -443,8 +568,7 @@ async def check_single_service_health(service_name: str):
 @app.get("/integrations/gate/cards/{card_id}", tags=["integrations"])
 async def get_gate_card_info(card_id: str):
     """
-    Gọi sang Access Gate Service (192.168.137.89:8000/cards/{cardId})
-    với Bearer token để tra cứu dữ liệu thẻ.
+    Gọi sang Access Gate Service (/cards/{cardId}) với Bearer token để tra cứu dữ liệu thẻ.
     """
     try:
         target_url = f"{GATE_SERVICE_URL.rstrip('/')}/cards/{card_id}"
@@ -467,6 +591,67 @@ async def get_gate_card_info(card_id: str):
         return {
             "status": "error",
             "gateUrl": f"{GATE_SERVICE_URL.rstrip('/')}/cards/{card_id}",
+            "error": str(e),
+        }
+
+
+@app.get("/integrations/gate/logs/recent", tags=["integrations"])
+async def get_gate_recent_logs(limit: int = 5):
+    """
+    Gọi sang Access Gate Service (GET /access/logs/recent?limit=5)
+    để lấy dữ liệu quẹt thẻ thật real-time (UID 04:A1:B2:C3:D4:0X, granted/denied).
+    """
+    try:
+        target_url = f"{GATE_SERVICE_URL.rstrip('/')}/access/logs/recent?limit={limit}"
+        headers = {"Authorization": f"Bearer {GATE_AUTH_TOKEN}"}
+        resp = requests.get(target_url, headers=headers, timeout=3.0)
+        logs_data = {}
+        try:
+            logs_data = resp.json()
+        except Exception:
+            logs_data = {"raw": resp.text}
+
+        return {
+            "status": "success" if resp.status_code == 200 else "failed",
+            "gateUrl": target_url,
+            "statusCode": resp.status_code,
+            "logs": logs_data,
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "gateUrl": f"{GATE_SERVICE_URL.rstrip('/')}/access/logs/recent?limit={limit}",
+            "error": str(e),
+        }
+
+
+@app.get("/integrations/gate/gates/{gate_id}/status", tags=["integrations"])
+async def get_gate_barrier_status(gate_id: str = "GATE-01"):
+    """
+    Gọi sang Access Gate Service (GET /gates/{gateId}/status)
+    để kiểm tra trạng thái vật lý cổng barrier.
+    """
+    try:
+        target_url = f"{GATE_SERVICE_URL.rstrip('/')}/gates/{gate_id}/status"
+        headers = {"Authorization": f"Bearer {GATE_AUTH_TOKEN}"}
+        resp = requests.get(target_url, headers=headers, timeout=3.0)
+        status_data = {}
+        try:
+            status_data = resp.json()
+        except Exception:
+            status_data = {"raw": resp.text}
+
+        return {
+            "status": "success" if resp.status_code == 200 else "failed",
+            "gateUrl": target_url,
+            "statusCode": resp.status_code,
+            "gateId": gate_id,
+            "data": status_data,
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "gateUrl": f"{GATE_SERVICE_URL.rstrip('/')}/gates/{gate_id}/status",
             "error": str(e),
         }
 
@@ -515,6 +700,87 @@ async def test_ai_vision_models():
         }
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+
+@app.post("/integrations/ai-vision/detect", tags=["integrations"])
+async def test_ai_vision_detect(payload: Optional[Dict[str, Any]] = None):
+    """
+    Gọi sang AI Vision Service (POST /vision/detect) để phát hiện đối tượng trong ảnh theo hợp đồng.
+    """
+    try:
+        target_url = f"{AI_VISION_URL.rstrip('/')}/vision/detect"
+        headers = {
+            "Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}",
+            "Content-Type": "application/json",
+        }
+        body = payload or {
+            "camera_id": "cam-gate-01",
+            "image_url": "http://storage.campus.local/images/frame-20260811-001.jpg",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "confidence_threshold": 0.6,
+        }
+        resp = requests.post(target_url, json=body, headers=headers, timeout=4.0)
+        return {
+            "status": "success" if resp.status_code == 200 else "failed",
+            "statusCode": resp.status_code,
+            "result": resp.json() if "application/json" in resp.headers.get("content-type", "") else resp.text,
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+@app.get("/integrations/ai-vision/detections/{detection_id}", tags=["integrations"])
+async def get_ai_vision_detection_by_id(detection_id: str):
+    """
+    Gọi sang AI Vision Service (GET /vision/detections/{detectionId}) để lấy chi tiết kết quả detection.
+    """
+    try:
+        target_url = f"{AI_VISION_URL.rstrip('/')}/vision/detections/{detection_id}"
+        headers = {"Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}"}
+        resp = requests.get(target_url, headers=headers, timeout=3.0)
+        return {
+            "status": "success" if resp.status_code == 200 else "failed",
+            "statusCode": resp.status_code,
+            "detectionId": detection_id,
+            "result": resp.json() if "application/json" in resp.headers.get("content-type", "") else resp.text,
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+@app.get("/integrations/ai-vision/results/recent", tags=["integrations"])
+async def get_ai_vision_recent_results(limit: int = 10, camera_id: Optional[str] = None):
+    """
+    Gọi sang AI Vision Service (GET /vision/results/recent) để lấy danh sách detection gần đây.
+    """
+    try:
+        target_url = f"{AI_VISION_URL.rstrip('/')}/vision/results/recent?limit={limit}"
+        if camera_id:
+            target_url += f"&camera_id={camera_id}"
+        headers = {"Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}"}
+        resp = requests.get(target_url, headers=headers, timeout=3.0)
+        return {
+            "status": "success" if resp.status_code == 200 else "failed",
+            "statusCode": resp.status_code,
+            "result": resp.json() if "application/json" in resp.headers.get("content-type", "") else resp.text,
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+# -------------------------------
+# WEB DASHBOARD (HTML UI)
+# -------------------------------
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+@app.get("/dashboard", response_class=HTMLResponse, tags=["dashboard"])
+async def serve_dashboard():
+    """Phục vụ giao diện Live Operations Dashboard trực quan cho toàn hệ thống."""
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "dashboard.html")
+    if os.path.exists(template_path):
+        with open(template_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse(content="<h1>Smart Campus Live Dashboard is active!</h1>")
+
 
 
 
