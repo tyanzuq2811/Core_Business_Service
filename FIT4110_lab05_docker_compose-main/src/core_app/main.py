@@ -209,6 +209,7 @@ async def create_alert(
         )
 
     alert_id = str(uuid.uuid4())
+    now_str = datetime.now(timezone.utc).isoformat()
     new_alert = {
         "id": alert_id,
         "sourceService": payload.sourceService,
@@ -216,10 +217,20 @@ async def create_alert(
         "severity": payload.severity,
         "message": payload.message,
         "status": "OPEN",
-        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "createdAt": now_str,
         "resolvedAt": None,
     }
     ALERTS_DB[alert_id] = new_alert
+
+    # Tự động đẩy sự kiện cảnh báo thật sang Analytics qua MQTT
+    publish_mqtt_event("business.alert.created", {
+        "alert_id": alert_id,
+        "alert_type": payload.alertType,
+        "location": "GATE-01",
+        "severity": payload.severity,
+        "created_at": now_str,
+    })
+
     return new_alert
 
 
@@ -362,6 +373,7 @@ async def check_access(
         )
 
     decision_id = str(uuid.uuid4())
+    evaluated_at = datetime.now(timezone.utc).isoformat()
     decision = {
         "decisionId": decision_id,
         "cardId": payload.cardId,
@@ -370,9 +382,20 @@ async def check_access(
         "result": "ALLOW",
         "reasonCode": "VALID_CARD",
         "policyId": "POL-001",
-        "evaluatedAt": datetime.now(timezone.utc).isoformat(),
+        "evaluatedAt": evaluated_at,
     }
     DECISIONS_DB[decision_id] = decision
+
+    # Tự động đẩy sự kiện quẹt thẻ thật sang Analytics qua MQTT
+    publish_mqtt_event("business.policy.decision.created", {
+        "decision_id": decision_id,
+        "card_id": payload.cardId,
+        "gate_id": payload.gateId,
+        "direction": payload.direction,
+        "result": "ALLOW",
+        "evaluated_at": evaluated_at,
+    })
+
     return decision
 
 
@@ -770,6 +793,91 @@ async def get_ai_vision_recent_results(limit: int = 10, camera_id: Optional[str]
         }
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+
+@app.post("/vision/detection-result", status_code=status.HTTP_200_OK, tags=["ai-vision-webhook"])
+async def receive_ai_vision_detection(request: Request):
+    """
+    Endpoint Webhook để nhận kết quả detection từ AI Vision Service theo hợp đồng OpenAPI 3.1.0.
+    Core Business áp dụng rule nghiệp vụ:
+    - Nếu phát hiện người trong khu vực cấm / risk_level HIGH -> Tạo alert UNKNOWN_PERSON / SUSPICIOUS_OBJECT.
+    - Trả về AIVisionResultAck xác nhận cho AI Vision.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    detection_id = body.get("detection_id") or str(uuid.uuid4())
+    camera_id = body.get("camera_id", "cam-default")
+    detections = body.get("detections", [])
+    risk_level = str(body.get("risk_level", "LOW")).upper()
+    metadata = body.get("metadata", {})
+    ack_id = str(uuid.uuid4())
+    now_str = datetime.now(timezone.utc).isoformat()
+
+    # Lưu detection vào luồng sự kiện đa hình
+    event_record = {
+        "eventId": str(uuid.uuid4()),
+        "sourceService": "ai-vision",
+        "eventType": "AI_VISION_DETECTION",
+        "payload": {
+            "detection_id": detection_id,
+            "camera_id": camera_id,
+            "detections": detections,
+            "risk_level": risk_level,
+            "metadata": metadata,
+        },
+        "timestamp": body.get("timestamp") or now_str,
+        "receivedAt": now_str,
+    }
+    EVENTS_DB.insert(0, event_record)
+
+    # Core Business Rule Engine: Đánh giá nguy cơ
+    if risk_level in ("HIGH", "CRITICAL") or metadata.get("location") == "restricted_area":
+        alert_id = str(uuid.uuid4())
+        alert_type = "SUSPICIOUS_OBJECT" if any(d.get("label") not in ("person", "human") for d in detections) else "UNKNOWN_PERSON"
+        alert_record = {
+            "id": alert_id,
+            "sourceService": "ai-vision",
+            "alertType": alert_type,
+            "severity": risk_level if risk_level in ("HIGH", "CRITICAL") else "HIGH",
+            "message": f"Phát hiện {len(detections)} đối tượng tại camera {camera_id} (Mức độ: {risk_level})",
+            "relatedEventId": detection_id,
+            "status": "OPEN",
+            "createdAt": now_str,
+            "resolvedAt": None,
+        }
+        ALERTS_DB[alert_id] = alert_record
+
+        # Tự động đẩy qua MQTT sang Analytics
+        publish_mqtt_event("business.alert.created", {
+            "alert_id": alert_id,
+            "alert_type": alert_type,
+            "location": camera_id,
+            "severity": risk_level,
+            "created_at": now_str,
+        })
+
+        return {
+            "ack_id": ack_id,
+            "detection_id": detection_id,
+            "status": "ACCEPTED",
+            "action_taken": "ALERT_CREATED",
+            "alert_id": alert_id,
+            "message": "Phát hiện đối tượng khả nghi / vi phạm an ninh, đã tạo alert",
+            "processed_at": now_str,
+        }
+
+    return {
+        "ack_id": ack_id,
+        "detection_id": detection_id,
+        "status": "ACCEPTED",
+        "action_taken": "NONE",
+        "alert_id": None,
+        "message": "Kết quả đã được ghi nhận, không phát hiện vi phạm",
+        "processed_at": now_str,
+    }
 
 
 # -------------------------------
