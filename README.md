@@ -7,6 +7,17 @@
 
 ---
 
+## 👥 Bảng Phân Chia Công Việc & Tỷ Lệ Đóng Góp Nhóm (Lab 02 – Lab 05)
+
+| STT | Mã Sinh Viên | Họ và Tên | Lớp | Tỷ Lệ Thực Hiện |
+| :---: | :---: | :---| :---: | :---: |
+| **1** | **1771020189** | **Lê Tuấn Dũng** *(Trưởng nhóm)* | **KHMT 17-01** | **40%** |
+| **2** | 1771040024 | Nguyễn Duy Thuận | KHMT 17-01 | 20% |
+| **3** | 1771040025 | Nguyễn Văn Tiến | KHMT 17-01 | 20% |
+| **4** | 1771040011 | Bế Quang Hải | KHMT 17-01 | 20% |
+
+---
+
 ## 1. Giới thiệu Tổng quan về Core Business Service
 
 **Core Business Service** đóng vai trò là "bộ não" trung tâm điều phối nghiệp vụ và thực thi chính sách (Policy Engine) trong hệ sinh thái **Smart Campus Operations Platform**. 
