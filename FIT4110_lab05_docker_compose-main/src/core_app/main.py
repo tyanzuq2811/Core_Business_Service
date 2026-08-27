@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import datetime, timezone
 import re
@@ -20,6 +21,9 @@ IOT_SERVICE_URL = os.getenv("IOT_SERVICE_URL", "http://192.168.1.11:8000")
 GATE_SERVICE_URL = os.getenv("GATE_SERVICE_URL", "http://192.168.1.31:8000")
 GATE_AUTH_TOKEN = os.getenv("GATE_AUTH_TOKEN", "dev-secret-token")
 ANALYTICS_SERVICE_URL = os.getenv("ANALYTICS_SERVICE_URL", "http://192.168.1.51:8000")
+MQTT_BROKER_HOST = os.getenv("MQTT_BROKER_HOST", "192.168.1.51")
+MQTT_BROKER_PORT = int(os.getenv("MQTT_BROKER_PORT", "1883"))
+MQTT_TOPIC_BUSINESS_EVENTS = os.getenv("MQTT_TOPIC_BUSINESS_EVENTS", "business.events")
 NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "http://192.168.1.61:8000")
 
 app = FastAPI(
@@ -766,6 +770,98 @@ async def get_ai_vision_recent_results(limit: int = 10, camera_id: Optional[str]
         }
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+
+# -------------------------------
+# MQTT Integration (Analytics Service Pair 08)
+# -------------------------------
+def publish_mqtt_event(event_type: str, data: Dict[str, Any], correlation_id: Optional[str] = None):
+    """
+    Publish sự kiện nghiệp vụ sang Analytics Service qua MQTT Broker (192.168.1.51:1883)
+    theo đúng chuẩn hợp đồng event-contract-08-core-analytics.md (Topic: business.events).
+    """
+    payload = {
+        "eventId": str(uuid.uuid4()),
+        "eventType": event_type,
+        "occurredAt": datetime.now(timezone.utc).isoformat(),
+        "correlationId": correlation_id or f"req-{uuid.uuid4()}",
+        "source": "core-business",
+        "data": data,
+    }
+    try:
+        import paho.mqtt.publish as publish
+        publish.single(
+            topic=MQTT_TOPIC_BUSINESS_EVENTS,
+            payload=json.dumps(payload),
+            hostname=MQTT_BROKER_HOST,
+            port=MQTT_BROKER_PORT,
+            keepalive=3,
+        )
+    except Exception as e:
+        print(f"[MQTT] Publish to {MQTT_BROKER_HOST}:{MQTT_BROKER_PORT} error: {e}")
+
+
+@app.post("/integrations/analytics/mqtt/publish", tags=["integrations"])
+async def trigger_mqtt_publish(event_type: str = "business.alert.created"):
+    """
+    Bắn thử nghiệm sự kiện MQTT sang Analytics Service (192.168.1.51:1883)
+    vào topic 'business.events'.
+    """
+    sample_data = {
+        "business.alert.created": {
+            "alert_id": "ALT-" + str(uuid.uuid4())[:8].upper(),
+            "alert_type": "UNAUTHORIZED_ACCESS",
+            "location": "GATE-01",
+            "severity": "HIGH",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        },
+        "business.policy.decision.created": {
+            "decision_id": "DEC-" + str(uuid.uuid4())[:8].upper(),
+            "card_id": "RFID-2026-001",
+            "gate_id": "GATE-01",
+            "direction": "IN",
+            "result": "ALLOW",
+            "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        },
+        "business.alert.resolved": {
+            "alert_id": "ALT-001",
+            "resolved_at": datetime.now(timezone.utc).isoformat(),
+        }
+    }
+    data = sample_data.get(event_type, {"message": "Test event from Core Business"})
+    payload = {
+        "eventId": str(uuid.uuid4()),
+        "eventType": event_type,
+        "occurredAt": datetime.now(timezone.utc).isoformat(),
+        "correlationId": f"trace-{uuid.uuid4()}",
+        "source": "core-business",
+        "data": data,
+    }
+    try:
+        import paho.mqtt.publish as publish
+        publish.single(
+            topic=MQTT_TOPIC_BUSINESS_EVENTS,
+            payload=json.dumps(payload),
+            hostname=MQTT_BROKER_HOST,
+            port=MQTT_BROKER_PORT,
+            keepalive=3,
+        )
+        return {
+            "status": "success",
+            "message": f"Đã publish thành công event '{event_type}' lên topic '{MQTT_TOPIC_BUSINESS_EVENTS}' tại {MQTT_BROKER_HOST}:{MQTT_BROKER_PORT}!",
+            "broker": f"mqtt://{MQTT_BROKER_HOST}:{MQTT_BROKER_PORT}",
+            "topic": MQTT_TOPIC_BUSINESS_EVENTS,
+            "publishedPayload": payload,
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Không thể kết nối tới MQTT Broker tại {MQTT_BROKER_HOST}:{MQTT_BROKER_PORT}",
+            "error": str(e),
+            "broker": f"mqtt://{MQTT_BROKER_HOST}:{MQTT_BROKER_PORT}",
+            "topic": MQTT_TOPIC_BUSINESS_EVENTS,
+            "attemptedPayload": payload,
+        }
 
 
 # -------------------------------
