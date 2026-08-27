@@ -7,10 +7,10 @@ lint:
 	npx spectral lint contracts/*.yaml
 
 build:
-	docker build -t smartcampus/core-business:latest .
+	docker build -t fit4110/core-business:lab05 .
 
 run:
-	docker run --rm --name smartcampus-core-service -p 8001:8000 --env-file .env smartcampus/core-business:latest
+	docker run --rm --name fit4110-core-lab05 -p 8001:8000 --env-file .env.example fit4110/core-business:lab05
 
 compose-up:
 	docker compose up -d --build

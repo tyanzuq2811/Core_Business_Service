@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "fit4110-lab04-core-business",
-		"name": "FIT4110 Lab04 - Core Business Docker Packaging Tests",
-		"description": "Postman Collection hoàn chỉnh cho Core Business Service trong Lab 04 Docker Packaging. Bao gồm đầy đủ Functional, Auth, Negative, Boundary/Reliability, Consumer-side Smoke tests và Local Non-Functional tests.",
+		"_postman_id": "fit4110-lab05-core-business",
+		"name": "FIT4110 Lab05 - Core Business Stack (LAN Plug-a-thon)",
+		"description": "Postman Collection hoàn chỉnh nhất cho Core Business Service trong Lab 05 Docker Compose & LAN Plug-a-thon. Bao gồm đầy đủ Functional, Auth, Negative, Boundary/Reliability, SLA tests và bộ kịch bản tích hợp mạng LAN với AI Vision, Access Gate, Analytics, IoT, Notification.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"event": [
@@ -1219,6 +1219,161 @@
 									"    pm.expect(true).to.eql(true);",
 									"  });",
 									"}"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "07_Plug_a_thon_LAN_Integrations",
+			"item": [
+				{
+					"name": "GET /integrations/status - Dashboard quét toàn mạng LAN",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/integrations/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["integrations", "status"]
+						},
+						"description": "Quét kiểm tra trạng thái sống/chết (ONLINE/OFFLINE) và độ trễ của tất cả 5 đối tác trong mạng LAN."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('Response has summary and partners', function () {",
+									"  const json = pm.response.json();",
+									"  pm.expect(json).to.have.property('summary');",
+									"  pm.expect(json).to.have.property('partners');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET /integrations/gate/cards/{cardId} - Tra cứu thẻ bên Access Gate",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/integrations/gate/cards/RFID-2026-001",
+							"host": ["{{baseUrl}}"],
+							"path": ["integrations", "gate", "cards", "RFID-2026-001"]
+						},
+						"description": "Core Business gọi sang Access Gate (192.168.137.89:8000) kèm Bearer token để tra cứu thông tin thẻ."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('Card query returns success', function () {",
+									"  const json = pm.response.json();",
+									"  pm.expect(json.status).to.eql('success');",
+									"  pm.expect(json.data).to.have.property('cardId');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET /integrations/ai-vision/models - Xem model YOLOv8 của AI Vision",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/integrations/ai-vision/models",
+							"host": ["{{baseUrl}}"],
+							"path": ["integrations", "ai-vision", "models"]
+						},
+						"description": "Core Business gọi sang AI Vision (192.168.137.1:8000) để lấy metadata model AI."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('Model info returned', function () {",
+									"  const json = pm.response.json();",
+									"  pm.expect(json.status).to.eql('success');",
+									"  pm.expect(json.modelInfo).to.have.property('model_id');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST /integrations/ai-vision/face-match - So khớp khuôn mặt AI Vision",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/integrations/ai-vision/face-match",
+							"host": ["{{baseUrl}}"],
+							"path": ["integrations", "ai-vision", "face-match"]
+						},
+						"description": "Core Business kích hoạt yêu cầu so khớp khuôn mặt sang AI Vision Service."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('Face match evaluated', function () {",
+									"  const json = pm.response.json();",
+									"  pm.expect(json.status).to.eql('success');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET /integrations/analytics/health - Kiểm tra kết nối Analytics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/integrations/analytics/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["integrations", "analytics", "health"]
+						},
+						"description": "Core Business ping kiểm tra trạng thái của Analytics Service (192.168.137.249:8000)."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('Analytics is online', function () {",
+									"  const json = pm.response.json();",
+									"  pm.expect(json.status).to.eql('ONLINE');",
+									"});"
 								]
 							}
 						}

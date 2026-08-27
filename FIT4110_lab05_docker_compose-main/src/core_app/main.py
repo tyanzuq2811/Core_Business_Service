@@ -15,9 +15,11 @@ SERVICE_VERSION = os.getenv("SERVICE_VERSION", "0.5.0")
 
 # Địa chỉ IP/URL các nhóm trong mạng LAN (Cấu hình qua .env)
 AI_VISION_URL = os.getenv("AI_VISION_URL", "http://192.168.137.1:8000")
+AI_VISION_AUTH_TOKEN = os.getenv("AI_VISION_AUTH_TOKEN", "local-dev-token-vision")
 IOT_SERVICE_URL = os.getenv("IOT_SERVICE_URL", "http://192.168.137.10:8000")
-GATE_SERVICE_URL = os.getenv("GATE_SERVICE_URL", "http://192.168.137.20:8000")
-ANALYTICS_SERVICE_URL = os.getenv("ANALYTICS_SERVICE_URL", "http://192.168.137.30:8000")
+GATE_SERVICE_URL = os.getenv("GATE_SERVICE_URL", "http://192.168.137.89:8000")
+GATE_AUTH_TOKEN = os.getenv("GATE_AUTH_TOKEN", "dev-secret-token")
+ANALYTICS_SERVICE_URL = os.getenv("ANALYTICS_SERVICE_URL", "http://192.168.137.249:8000")
 NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "http://192.168.137.40:8000")
 
 app = FastAPI(
@@ -436,5 +438,83 @@ async def check_single_service_health(service_name: str):
         )
 
     return ping_service(service_name, service_map[service_name])
+
+
+@app.get("/integrations/gate/cards/{card_id}", tags=["integrations"])
+async def get_gate_card_info(card_id: str):
+    """
+    Gọi sang Access Gate Service (192.168.137.89:8000/cards/{cardId})
+    với Bearer token để tra cứu dữ liệu thẻ.
+    """
+    try:
+        target_url = f"{GATE_SERVICE_URL.rstrip('/')}/cards/{card_id}"
+        headers = {"Authorization": f"Bearer {GATE_AUTH_TOKEN}"}
+        resp = requests.get(target_url, headers=headers, timeout=3.0)
+        card_data = {}
+        try:
+            card_data = resp.json()
+        except Exception:
+            card_data = {"raw": resp.text}
+
+        return {
+            "status": "success" if resp.status_code == 200 else "failed",
+            "gateUrl": target_url,
+            "statusCode": resp.status_code,
+            "cardId": card_id,
+            "data": card_data,
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "gateUrl": f"{GATE_SERVICE_URL.rstrip('/')}/cards/{card_id}",
+            "error": str(e),
+        }
+
+
+@app.post("/integrations/ai-vision/face-match", tags=["integrations"])
+async def test_ai_vision_face_match(payload: Optional[Dict[str, Any]] = None):
+    """
+    Gọi sang AI Vision Service (POST /vision/face-match) để kiểm tra so khớp khuôn mặt.
+    """
+    try:
+        target_url = f"{AI_VISION_URL.rstrip('/')}/vision/face-match"
+        headers = {
+            "Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}",
+            "Content-Type": "application/json",
+        }
+        body = payload or {
+            "image_url": "http://192.168.137.115:8001/cameras/cam-lab05-gate/frames/latest",
+            "reference_image_url": "http://192.168.137.79:8001/profiles/student-001.jpg",
+            "threshold": 0.75,
+            "trace_id": f"trace-core-{int(datetime.now().timestamp())}",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        resp = requests.post(target_url, json=body, headers=headers, timeout=4.0)
+        return {
+            "status": "success" if resp.status_code == 200 else "failed",
+            "statusCode": resp.status_code,
+            "result": resp.json() if "application/json" in resp.headers.get("content-type", "") else resp.text,
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+@app.get("/integrations/ai-vision/models", tags=["integrations"])
+async def test_ai_vision_models():
+    """
+    Gọi sang AI Vision Service (GET /vision/models/info) để lấy thông tin model YOLOv8.
+    """
+    try:
+        target_url = f"{AI_VISION_URL.rstrip('/')}/vision/models/info"
+        headers = {"Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}"}
+        resp = requests.get(target_url, headers=headers, timeout=3.0)
+        return {
+            "status": "success" if resp.status_code == 200 else "failed",
+            "statusCode": resp.status_code,
+            "modelInfo": resp.json() if "application/json" in resp.headers.get("content-type", "") else resp.text,
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
 
 
