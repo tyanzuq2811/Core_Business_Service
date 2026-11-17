@@ -1,20 +1,33 @@
+import asyncio
 import json
 import os
-from datetime import datetime, timezone
 import re
+import socket
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
+
+import anyio
 import requests
-from fastapi import FastAPI, Header, HTTPException, Request, Response, status
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
-# Đọc cấu hình từ biến môi trường (mạng LAN Plug-a-thon)
+try:
+    from .storage import create_store
+except ImportError:
+    from core_app.storage import create_store
+
+# -------------------------------
+# Configuration (Plug-a-thon LAN & Docker Compose)
+# -------------------------------
 SERVICE_NAME = os.getenv("SERVICE_NAME", "core-business")
 SERVICE_VERSION = os.getenv("SERVICE_VERSION", "0.5.0")
+ENV_MODE = os.getenv("ENV", "lan")
+AUTH_TOKEN = os.getenv("AUTH_TOKEN", "mock-core-token-2026")
 
-# Địa chỉ IP/URL các nhóm trong mạng LAN (Cấu hình qua .env)
+# Partner service URLs & tokens (configured via .env or compose overrides)
 AI_VISION_URL = os.getenv("AI_VISION_URL", "http://192.168.1.41:8000")
 AI_VISION_AUTH_TOKEN = os.getenv("AI_VISION_AUTH_TOKEN", "local-dev-token-vision")
 IOT_SERVICE_URL = os.getenv("IOT_SERVICE_URL", "http://192.168.1.11:8000")
@@ -25,71 +38,31 @@ MQTT_BROKER_HOST = os.getenv("MQTT_BROKER_HOST", "192.168.1.51")
 MQTT_BROKER_PORT = int(os.getenv("MQTT_BROKER_PORT", "1883"))
 MQTT_TOPIC_BUSINESS_EVENTS = os.getenv("MQTT_TOPIC_BUSINESS_EVENTS", "business.events")
 NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "http://192.168.1.61:8000")
+DEFAULT_ALERT_RECIPIENT = os.getenv("ALERT_RECIPIENT", "security-ops@campus.local")
+
+# Core Business Rule thresholds
+TEMP_HIGH_THRESHOLD = float(os.getenv("TEMP_HIGH_THRESHOLD", "40.0"))
+TEMP_CRITICAL_THRESHOLD = float(os.getenv("TEMP_CRITICAL_THRESHOLD", "50.0"))
+ACCESS_RATE_LIMIT_MAX = int(os.getenv("ACCESS_RATE_LIMIT_MAX", "10"))
+ENFORCE_TIME_WINDOW = os.getenv("ENFORCE_TIME_WINDOW", "true").lower() == "true"
+CAMPUS_TZ_OFFSET_HOURS = int(os.getenv("CAMPUS_TZ_OFFSET_HOURS", "7"))
+BLACKLISTED_CARDS = {
+    c.strip() for c in os.getenv("BLACKLISTED_CARDS", "RFID-2026-999").split(",") if c.strip()
+}
 
 app = FastAPI(
     title="Smart Campus — Core Business Service API",
     version=SERVICE_VERSION,
-    description="Core Business Service backend - Hoàn thiện cho kịch bản mạng LAN Plug-a-thon.",
+    description="Core Business Service backend (Dual Storage: PostgreSQL & In-Memory, LAN Plug-a-thon & Compose Mock).",
 )
 
-# Shared in-memory data store for testing
-ALERTS_DB: Dict[str, Dict[str, Any]] = {
-    "0196fb3d-4ad7-7d1e-9f49-5d5148d2babc": {
-        "id": "0196fb3d-4ad7-7d1e-9f49-5d5148d2babc",
-        "sourceService": "core-business",
-        "alertType": "UNAUTHORIZED_ACCESS",
-        "severity": "HIGH",
-        "message": "Phát hiện truy cập trái phép tại cổng chính",
-        "status": "OPEN",
-        "createdAt": "2026-05-10T08:00:00Z",
-        "resolvedAt": None,
-    }
-}
-
-POLICIES_DB: Dict[str, Dict[str, Any]] = {
-    "POL-001": {
-        "policyId": "POL-001",
-        "name": "Default Student Campus Access",
-        "effect": "ALLOW",
-        "status": "ACTIVE",
-        "conditions": {"allowedGates": ["GATE-01", "GATE-02"], "timeWindow": "06:00-22:00"},
-        "active": True,
-    }
-}
-
-DECISIONS_DB: Dict[str, Dict[str, Any]] = {
-    "0196fb3d-4ad7-7d1e-9f49-bbb148d2b002": {
-        "decisionId": "0196fb3d-4ad7-7d1e-9f49-bbb148d2b002",
-        "cardId": "RFID-2026-001",
-        "gateId": "GATE-01",
-        "result": "ALLOW",
-        "reasonCode": "VALID_CARD",
-        "policyId": "POL-001",
-        "evaluatedAt": "2026-05-10T08:00:00Z",
-    }
-}
-
-EVENTS_DB: List[Dict[str, Any]] = [
-    {
-        "eventId": "0196fb3d-4ad7-7d1e-9f49-5d5148d2e001",
-        "sourceService": "iot-ingestion",
-        "eventType": "SENSOR_TELEMETRY",
-        "payload": {"sensorId": "ENV-01", "temperature": 24.5, "humidity": 65.0},
-        "receivedAt": "2026-08-27T07:10:00Z",
-    },
-    {
-        "eventId": "0196fb3d-4ad7-7d1e-9f49-5d5148d2e002",
-        "sourceService": "ai-vision",
-        "eventType": "OBJECT_DETECTION",
-        "payload": {"cameraId": "cam-gate-01", "detectedObjects": ["person", "car"], "confidence": 0.94},
-        "receivedAt": "2026-08-27T07:12:00Z",
-    }
-]
-
-PROCESSED_IDEMPOTENCY_KEYS = set()
+# Khởi tạo lớp lưu trữ kép (PostgreSQL hoặc In-Memory dựa vào STORAGE_BACKEND / DATABASE_URL)
+store = create_store()
 
 
-# Helper function to generate ProblemDetails RFC 9457 response
+# -------------------------------
+# Error & Auth Helpers
+# -------------------------------
 def problem_details_response(
     status_code: int,
     title: str,
@@ -98,6 +71,7 @@ def problem_details_response(
     errors: Optional[List[Dict[str, Any]]] = None,
     type_url: str = "https://campus.local/errors/validation",
 ) -> JSONResponse:
+    """Tạo phản hồi lỗi chuẩn RFC 9457 ProblemDetails."""
     content: Dict[str, Any] = {
         "type": type_url,
         "title": title,
@@ -110,17 +84,29 @@ def problem_details_response(
     return JSONResponse(status_code=status_code, content=content, media_type="application/problem+json")
 
 
-# Global Exception Handler for validation errors
+def _extract_bearer_token(authorization: Optional[str]) -> Optional[str]:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    return authorization.split(" ", 1)[1].strip() or None
+
+
+def _is_authorized(authorization: Optional[str]) -> bool:
+    token = _extract_bearer_token(authorization)
+    return bool(token and token == AUTH_TOKEN)
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     errors_list = []
     for err in exc.errors():
         field_name = ".".join([str(x) for x in err.get("loc", []) if x not in ("body", "query", "path")])
-        errors_list.append({
-            "field": field_name or "payload",
-            "code": err.get("type", "VALIDATION_ERROR").upper(),
-            "message": err.get("msg", "Dữ liệu không hợp lệ"),
-        })
+        errors_list.append(
+            {
+                "field": field_name or "payload",
+                "code": err.get("type", "VALIDATION_ERROR").upper(),
+                "message": err.get("msg", "Dữ liệu không hợp lệ"),
+            }
+        )
     return problem_details_response(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         title="Dữ liệu không hợp lệ về nghiệp vụ",
@@ -160,15 +146,189 @@ class EventIngestPayload(BaseModel):
         extra = "allow"
 
 
+class NotificationDispatchPayload(BaseModel):
+    recipient: str = DEFAULT_ALERT_RECIPIENT
+    channel: str = "EMAIL"
+    subject: str
+    message: str
+    severity: str = "HIGH"
+
+
 # -------------------------------
-# Endpoints
+# Outbound Helpers (MQTT & Notification & Partner Proxy)
+# -------------------------------
+def publish_mqtt_event(event_type: str, data: Dict[str, Any], correlation_id: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Publish sự kiện nghiệp vụ sang Analytics Service qua MQTT Broker
+    theo chuẩn hợp đồng event-contract-08-core-analytics.md (Topic: business.events).
+    """
+    payload = {
+        "eventId": str(uuid.uuid4()),
+        "eventType": event_type,
+        "occurredAt": datetime.now(timezone.utc).isoformat(),
+        "correlationId": correlation_id or f"req-{uuid.uuid4()}",
+        "source": "core-business",
+        "data": data,
+    }
+    try:
+        # Fail-fast TCP reachability check so offline MQTT never stalls background task queues
+        with socket.create_connection((MQTT_BROKER_HOST, MQTT_BROKER_PORT), timeout=0.5):
+            pass
+
+        import paho.mqtt.publish as publish
+
+        publish.single(
+            topic=MQTT_TOPIC_BUSINESS_EVENTS,
+            payload=json.dumps(payload),
+            hostname=MQTT_BROKER_HOST,
+            port=MQTT_BROKER_PORT,
+            keepalive=2,
+        )
+        return {"status": "success", "payload": payload}
+    except Exception as exc:
+        print(f"[MQTT] Publish to {MQTT_BROKER_HOST}:{MQTT_BROKER_PORT} error: {exc}")
+        return {"status": "error", "error": str(exc), "payload": payload}
+
+
+def dispatch_notification(
+    subject: str,
+    message: str,
+    severity: str = "HIGH",
+    recipient: str = DEFAULT_ALERT_RECIPIENT,
+    channel: str = "EMAIL",
+) -> Dict[str, Any]:
+    """Đẩy thông báo cảnh báo tới Notification Service (POST /notifications/send)."""
+    target_url = f"{NOTIFICATION_SERVICE_URL.rstrip('/')}/notifications/send"
+    body = {
+        "recipient": recipient,
+        "channel": channel,
+        "subject": subject,
+        "message": message,
+        "severity": severity,
+    }
+    try:
+        resp = requests.post(target_url, json=body, timeout=2.0)
+        parsed = resp.json() if "application/json" in resp.headers.get("content-type", "") else {"raw": resp.text}
+        return {
+            "status": "success" if resp.status_code in (200, 201, 202) else "failed",
+            "statusCode": resp.status_code,
+            "url": target_url,
+            "response": parsed,
+        }
+    except Exception as exc:
+        print(f"[NOTIFY] Dispatch to {target_url} error: {exc}")
+        return {"status": "error", "url": target_url, "error": str(exc)}
+
+
+def dispatch_alert_side_effects(alert: Dict[str, Any], location: str = "GATE-01", correlation_id: Optional[str] = None) -> None:
+    """Tác vụ nền: gửi Notification (nếu HIGH/CRITICAL) trước, sau đó publish MQTT event."""
+    if str(alert.get("severity", "")).upper() in ("HIGH", "CRITICAL"):
+        dispatch_notification(
+            subject=f"[{alert['severity']}] Smart Campus Alert: {alert['alertType']}",
+            message=alert["message"],
+            severity=alert["severity"],
+        )
+    publish_mqtt_event(
+        "business.alert.created",
+        {
+            "alert_id": alert["id"],
+            "alert_type": alert["alertType"],
+            "location": location,
+            "severity": alert["severity"],
+            "created_at": alert["createdAt"],
+        },
+        correlation_id=correlation_id,
+    )
+
+
+def _proxy_partner_request(
+    method: str,
+    url: str,
+    *,
+    headers: Optional[Dict[str, str]] = None,
+    json_body: Optional[Dict[str, Any]] = None,
+    timeout: float = 3.0,
+) -> Dict[str, Any]:
+    """Helper gọi HTTP đồng nhất sang các partner service trong mạng LAN / Docker network."""
+    try:
+        resp = requests.request(method=method, url=url, headers=headers, json=json_body, timeout=timeout)
+        content_type = resp.headers.get("content-type", "")
+        parsed = resp.json() if "application/json" in content_type else {"raw": resp.text[:300]}
+        return {
+            "status": "success" if 200 <= resp.status_code < 300 else "failed",
+            "statusCode": resp.status_code,
+            "url": url,
+            "body": parsed,
+        }
+    except Exception as exc:
+        return {
+            "status": "error",
+            "url": url,
+            "error": str(exc),
+        }
+
+
+# -------------------------------
+# Rule Evaluation Helpers
+# -------------------------------
+def _parse_access_timestamp(ts: Optional[str]) -> datetime:
+    campus_tz = timezone(timedelta(hours=CAMPUS_TZ_OFFSET_HOURS))
+    if not ts:
+        return datetime.now(campus_tz)
+    try:
+        parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=campus_tz)
+        return parsed
+    except ValueError:
+        return datetime.now(campus_tz)
+
+
+def _is_within_time_window(dt: datetime, start_str: str, end_str: str) -> bool:
+    sh, sm = (int(x) for x in start_str.split(":"))
+    eh, em = (int(x) for x in end_str.split(":"))
+    minutes = dt.hour * 60 + dt.minute
+    start_m = sh * 60 + sm
+    end_m = eh * 60 + em
+    return start_m <= minutes <= end_m
+
+
+def _evaluate_access_policy(payload: AccessCheckPayload) -> Dict[str, Any]:
+    """Đánh giá chính sách POL-001 (allowedGates, blacklist, timeWindow, rapid-swipe rate limit)."""
+    policy = store.get_policy("POL-001") or {}
+    conditions = policy.get("conditions") or {}
+    allowed_gates = policy.get("allowedGates") or conditions.get("allowedGates") or ["GATE-01", "GATE-02"]
+    time_window = policy.get("timeWindow") or {"start": "06:00", "end": "22:00"}
+
+    if payload.cardId in BLACKLISTED_CARDS:
+        return {"result": "DENY", "reasonCode": "BLACKLISTED", "policyId": "POL-001"}
+
+    if payload.gateId not in allowed_gates:
+        return {"result": "DENY", "reasonCode": "POLICY_DENY", "policyId": "POL-001"}
+
+    if ENFORCE_TIME_WINDOW:
+        check_dt = _parse_access_timestamp(payload.timestamp)
+        if not _is_within_time_window(check_dt, time_window.get("start", "06:00"), time_window.get("end", "22:00")):
+            return {"result": "DENY", "reasonCode": "OUTSIDE_TIME_WINDOW", "policyId": "POL-001"}
+
+    recent_swipes = store.count_recent_decisions_for_card(payload.cardId, window_seconds=60)
+    if recent_swipes >= ACCESS_RATE_LIMIT_MAX:
+        return {"result": "DENY", "reasonCode": "POLICY_DENY", "policyId": "POL-001"}
+
+    return {"result": "ALLOW", "reasonCode": "VALID_CARD", "policyId": "POL-001"}
+
+
+# -------------------------------
+# Core Business API Endpoints
 # -------------------------------
 @app.get("/health", tags=["health"])
 async def get_health():
+    db_health = store.health_check()
     return {
-        "status": "ok",
+        "status": "ok" if db_health.get("status") == "ok" else "degraded",
         "service": SERVICE_NAME,
         "version": SERVICE_VERSION,
+        "storage": store.backend_name,
         "time": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -177,13 +337,13 @@ async def get_health():
 async def create_alert(
     payload: AlertCreatePayload,
     request: Request,
+    background_tasks: BackgroundTasks,
     prefer: Optional[str] = Header(None),
     authorization: Optional[str] = Header(None),
 ):
-    # Support test prefer header for mocking error responses
     if prefer == "code=400":
         return problem_details_response(
-            status_code=422,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             title="Dữ liệu không hợp lệ về nghiệp vụ",
             detail="Payload không đúng JSON Schema, thiếu trường bắt buộc sourceService",
             instance=str(request.url.path),
@@ -191,15 +351,14 @@ async def create_alert(
         )
     if prefer == "code=500":
         return problem_details_response(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             title="Internal Server Error",
             detail="Đã xảy ra sự cố nội bộ trên máy chủ Core Business",
             instance=str(request.url.path),
             type_url="https://campus.local/errors/server-error",
         )
 
-    # Auth verification for auth test scenarios
-    if authorization is None or authorization == "Bearer invalid-jwt-token":
+    if not _is_authorized(authorization):
         return problem_details_response(
             status_code=status.HTTP_401_UNAUTHORIZED,
             title="Unauthorized",
@@ -216,21 +375,13 @@ async def create_alert(
         "alertType": payload.alertType,
         "severity": payload.severity,
         "message": payload.message,
+        "relatedEventId": payload.relatedEventId,
         "status": "OPEN",
         "createdAt": now_str,
         "resolvedAt": None,
     }
-    ALERTS_DB[alert_id] = new_alert
-
-    # Tự động đẩy sự kiện cảnh báo thật sang Analytics qua MQTT
-    publish_mqtt_event("business.alert.created", {
-        "alert_id": alert_id,
-        "alert_type": payload.alertType,
-        "location": "GATE-01",
-        "severity": payload.severity,
-        "created_at": now_str,
-    })
-
+    store.create_alert(new_alert)
+    background_tasks.add_task(dispatch_alert_side_effects, new_alert, "GATE-01")
     return new_alert
 
 
@@ -239,7 +390,18 @@ async def list_alerts(
     request: Request,
     limit: int = 10,
     prefer: Optional[str] = Header(None),
+    authorization: Optional[str] = Header(None),
 ):
+    # Nếu client chủ động gửi Authorization header sai thì từ chối 401; Dashboard nội bộ không gửi header vẫn đọc được
+    if authorization is not None and not _is_authorized(authorization):
+        return problem_details_response(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            title="Unauthorized",
+            detail="Bearer Token không hợp lệ",
+            instance=str(request.url.path),
+            type_url="https://campus.local/errors/unauthorized",
+        )
+
     if prefer == "code=400" or limit < 1 or limit > 100:
         return problem_details_response(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -248,18 +410,18 @@ async def list_alerts(
             instance=str(request.url.path),
         )
 
-    items = list(ALERTS_DB.values())[:limit]
+    items, total = store.list_alerts(limit)
     return {
         "items": items,
-        "hasMore": len(ALERTS_DB) > limit,
-        "total": len(ALERTS_DB),
+        "nextCursor": None,
+        "hasMore": total > limit,
+        "total": total,
     }
 
 
 @app.get("/alerts/recent", tags=["alerts"])
 async def get_recent_alerts(limit: int = 5):
-    items = list(ALERTS_DB.values())[:limit]
-    return {"items": items}
+    return {"items": store.get_recent_alerts(limit)}
 
 
 @app.get("/alerts/{alert_id}", tags=["alerts"])
@@ -268,7 +430,8 @@ async def get_alert_detail(
     request: Request,
     prefer: Optional[str] = Header(None),
 ):
-    if prefer == "code=404" or alert_id not in ALERTS_DB:
+    alert = None if prefer == "code=404" else store.get_alert(alert_id)
+    if alert is None:
         return problem_details_response(
             status_code=status.HTTP_404_NOT_FOUND,
             title="Tài nguyên không tồn tại",
@@ -276,62 +439,54 @@ async def get_alert_detail(
             instance=str(request.url.path),
             type_url="https://campus.local/errors/not-found",
         )
-    return ALERTS_DB[alert_id]
+    return alert
 
 
 @app.post("/alerts/{alert_id}/resolve", tags=["alerts"])
-async def resolve_alert(alert_id: str):
+async def resolve_alert(
+    alert_id: str,
+    request: Request,
+    background_tasks: BackgroundTasks,
+):
     """Đánh dấu cảnh báo đã được giải quyết (RESOLVED)."""
-    if alert_id in ALERTS_DB:
-        ALERTS_DB[alert_id]["status"] = "RESOLVED"
-        ALERTS_DB[alert_id]["resolvedAt"] = datetime.now(timezone.utc).isoformat()
-        return ALERTS_DB[alert_id]
-    raise HTTPException(status_code=404, detail="Alert not found")
+    resolved_at = datetime.now(timezone.utc).isoformat()
+    resolved = store.resolve_alert(alert_id, resolved_at)
+    if resolved is None:
+        return problem_details_response(
+            status_code=status.HTTP_404_NOT_FOUND,
+            title="Tài nguyên không tồn tại",
+            detail=f"Không tìm thấy cảnh báo với alertId '{alert_id}'",
+            instance=str(request.url.path),
+            type_url="https://campus.local/errors/not-found",
+        )
+    background_tasks.add_task(
+        publish_mqtt_event,
+        "business.alert.resolved",
+        {"alert_id": alert_id, "resolved_at": resolved_at},
+    )
+    return resolved
 
 
 @app.get("/decisions", tags=["access-policy"])
 async def list_decisions():
-    """Lấy danh sách tất cả các quyết định quẹt thẻ phục vụ Dashboard & Analytics."""
-    return list(DECISIONS_DB.values())
+    """Lấy danh sách quyết định quẹt thẻ phục vụ Dashboard & Analytics."""
+    return store.list_decisions()
 
 
 @app.get("/events", tags=["events"])
 async def list_events():
-    """Lấy danh sách tất cả sự kiện đã nhận phục vụ Dashboard."""
-    return EVENTS_DB
+    """Lấy danh sách sự kiện đã tiếp nhận phục vụ Dashboard."""
+    return store.list_events()
 
 
 @app.post("/dashboard/clear-data", tags=["dashboard"])
 async def clear_live_data():
-    """Xóa sạch dữ liệu trong bộ nhớ để nhận 100% dữ liệu thật từ các nhóm."""
-    global EVENTS_DB, ALERTS_DB, DECISIONS_DB
-    EVENTS_DB.clear()
-    ALERTS_DB = {
-        "0196fb3d-4ad7-7d1e-9f49-5d5148d2babc": {
-            "id": "0196fb3d-4ad7-7d1e-9f49-5d5148d2babc",
-            "sourceService": "core-business",
-            "alertType": "SYSTEM_READY",
-            "severity": "LOW",
-            "message": "Hệ thống sẵn sàng tiếp nhận dữ liệu thật từ các nhóm mạng LAN",
-            "status": "OPEN",
-            "createdAt": datetime.now(timezone.utc).isoformat(),
-            "resolvedAt": None,
-        }
-    }
-    DECISIONS_DB = {
-        "0196fb3d-4ad7-7d1e-9f49-bbb148d2b002": {
-            "decisionId": "0196fb3d-4ad7-7d1e-9f49-bbb148d2b002",
-            "cardId": "RFID-2026-001",
-            "gateId": "GATE-01",
-            "result": "ALLOW",
-            "reasonCode": "VALID_CARD",
-            "policyId": "POL-001",
-            "evaluatedAt": datetime.now(timezone.utc).isoformat(),
-        }
-    }
+    """Làm sạch dữ liệu nghiệp vụ trong Store hiện tại để demo sạch từ đầu."""
+    store.clear_data()
     return {
         "status": "ok",
-        "message": "Đã làm sạch toàn bộ dữ liệu! Sẵn sàng tiếp nhận dữ liệu thật từ các nhóm."
+        "storage": store.backend_name,
+        "message": f"Đã làm sạch toàn bộ dữ liệu ({store.backend_name})! Sẵn sàng tiếp nhận dữ liệu thật.",
     }
 
 
@@ -339,9 +494,9 @@ async def clear_live_data():
 async def check_access(
     payload: AccessCheckPayload,
     request: Request,
+    background_tasks: BackgroundTasks,
     prefer: Optional[str] = Header(None),
 ):
-    # Check cardId regex pattern
     card_pattern = r"^RFID-[0-9]{4}-[0-9]{3}$"
     if prefer == "code=400" or not re.match(card_pattern, payload.cardId):
         return problem_details_response(
@@ -352,7 +507,16 @@ async def check_access(
             errors=[{"field": "cardId", "code": "PATTERN_MISMATCH", "message": "cardId phải có dạng RFID-YYYY-NNN"}],
         )
 
-    # Check direction enum
+    gate_pattern = r"^GATE-[0-9]{2}$"
+    if not re.match(gate_pattern, payload.gateId):
+        return problem_details_response(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            title="Dữ liệu không hợp lệ về nghiệp vụ",
+            detail="Trường gateId phải có định dạng GATE-XX (ví dụ: GATE-01)",
+            instance=str(request.url.path),
+            errors=[{"field": "gateId", "code": "PATTERN_MISMATCH", "message": "gateId phải có dạng GATE-XX"}],
+        )
+
     if payload.direction not in ("IN", "OUT"):
         return problem_details_response(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -362,8 +526,7 @@ async def check_access(
             errors=[{"field": "direction", "code": "INVALID_ENUM", "message": "direction phải là IN hoặc OUT"}],
         )
 
-    # Check idempotency collision when requested via Prefer header
-    if prefer == "code=409":
+    if prefer == "code=409" or (payload.idempotencyKey and store.has_idempotency_key(payload.idempotencyKey)):
         return problem_details_response(
             status_code=status.HTTP_409_CONFLICT,
             title="Xung đột trùng lặp giao dịch",
@@ -372,6 +535,7 @@ async def check_access(
             type_url="https://campus.local/errors/conflict",
         )
 
+    evaluation = _evaluate_access_policy(payload)
     decision_id = str(uuid.uuid4())
     evaluated_at = datetime.now(timezone.utc).isoformat()
     decision = {
@@ -379,22 +543,49 @@ async def check_access(
         "cardId": payload.cardId,
         "gateId": payload.gateId,
         "direction": payload.direction,
-        "result": "ALLOW",
-        "reasonCode": "VALID_CARD",
-        "policyId": "POL-001",
+        "result": evaluation["result"],
+        "reasonCode": evaluation["reasonCode"],
+        "policyId": evaluation["policyId"],
         "evaluatedAt": evaluated_at,
+        "expiresAt": None,
     }
-    DECISIONS_DB[decision_id] = decision
+    store.create_decision(decision)
+    if payload.idempotencyKey:
+        store.save_idempotency_key(payload.idempotencyKey)
 
-    # Tự động đẩy sự kiện quẹt thẻ thật sang Analytics qua MQTT
-    publish_mqtt_event("business.policy.decision.created", {
-        "decision_id": decision_id,
-        "card_id": payload.cardId,
-        "gate_id": payload.gateId,
-        "direction": payload.direction,
-        "result": "ALLOW",
-        "evaluated_at": evaluated_at,
-    })
+    if evaluation["result"] == "DENY":
+        deny_alert = {
+            "id": str(uuid.uuid4()),
+            "sourceService": "core-business",
+            "alertType": "UNAUTHORIZED_ACCESS",
+            "severity": "HIGH",
+            "message": f"Từ chối truy cập thẻ {payload.cardId} tại {payload.gateId} ({evaluation['reasonCode']})",
+            "relatedEventId": decision_id,
+            "status": "OPEN",
+            "createdAt": evaluated_at,
+            "resolvedAt": None,
+        }
+        store.create_alert(deny_alert)
+        background_tasks.add_task(dispatch_alert_side_effects, deny_alert, payload.gateId, payload.idempotencyKey)
+
+    background_tasks.add_task(
+        publish_mqtt_event,
+        "business.policy.decision.created",
+        {
+            "decision_id": decision_id,
+            "policy_type": "ACCESS",
+            "decision": evaluation["result"],
+            "location": payload.gateId,
+            "subject_type": "STUDENT",
+            "decided_at": evaluated_at,
+            "card_id": payload.cardId,
+            "gate_id": payload.gateId,
+            "direction": payload.direction,
+            "result": evaluation["result"],
+            "reason_code": evaluation["reasonCode"],
+        },
+        payload.idempotencyKey,
+    )
 
     return decision
 
@@ -405,7 +596,8 @@ async def get_policy_detail(
     request: Request,
     prefer: Optional[str] = Header(None),
 ):
-    if prefer == "code=404" or policy_id not in POLICIES_DB:
+    policy = None if prefer == "code=404" else store.get_policy(policy_id)
+    if policy is None:
         return problem_details_response(
             status_code=status.HTTP_404_NOT_FOUND,
             title="Tài nguyên không tồn tại",
@@ -413,7 +605,7 @@ async def get_policy_detail(
             instance=str(request.url.path),
             type_url="https://campus.local/errors/not-found",
         )
-    return POLICIES_DB[policy_id]
+    return policy
 
 
 @app.get("/decisions/{decision_id}", tags=["access-policy"])
@@ -422,7 +614,8 @@ async def get_decision_detail(
     request: Request,
     prefer: Optional[str] = Header(None),
 ):
-    if prefer == "code=404" or decision_id not in DECISIONS_DB:
+    decision = None if prefer == "code=404" else store.get_decision(decision_id)
+    if decision is None:
         return problem_details_response(
             status_code=status.HTTP_404_NOT_FOUND,
             title="Tài nguyên không tồn tại",
@@ -430,36 +623,40 @@ async def get_decision_detail(
             instance=str(request.url.path),
             type_url="https://campus.local/errors/not-found",
         )
-    return DECISIONS_DB[decision_id]
+    return decision
 
 
 @app.post("/events", status_code=status.HTTP_201_CREATED, tags=["events"])
-async def ingest_event(request: Request):
+async def ingest_event(request: Request, background_tasks: BackgroundTasks):
     """
-    Tiếp nhận sự kiện từ IoT Ingestion (SensorEvent / sensor.reading.created)
-    hoặc các phân hệ khác theo chuẩn OpenAPI contract.
+    Tiếp nhận sự kiện từ IoT Ingestion hoặc các phân hệ khác theo chuẩn OpenAPI contract.
+    Hỗ trợ payload lồng `data`/`payload` ({metric, value}) và payload phẳng ({temperature, humidity, motion}).
     """
     try:
         body = await request.json()
     except Exception:
         body = {}
 
+    if not isinstance(body, dict):
+        return problem_details_response(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            title="Dữ liệu không hợp lệ về nghiệp vụ",
+            detail="Event body phải là JSON object",
+            instance=str(request.url.path),
+        )
+
     event_id = body.get("eventId") or str(uuid.uuid4())
     event_type = body.get("eventType") or "sensor.reading.created"
     source = body.get("source") or body.get("sourceService") or "iot-ingestion"
-    occurred_at = body.get("occurredAt") or body.get("timestamp") or datetime.now(timezone.utc).isoformat()
+    now_str = datetime.now(timezone.utc).isoformat()
+    occurred_at = body.get("occurredAt") or body.get("timestamp") or now_str
     correlation_id = body.get("correlationId")
 
-    # Trích xuất dữ liệu cảm biến (hỗ trợ cả dạng phẳng lẫn dạng lồng data / payload)
     data_payload = body.get("data") or body.get("payload") or {}
-    if not data_payload and any(k in body for k in ("deviceId", "metric", "value", "unit", "locationId")):
-        data_payload = {
-            "deviceId": body.get("deviceId"),
-            "metric": body.get("metric"),
-            "value": body.get("value"),
-            "unit": body.get("unit"),
-            "locationId": body.get("locationId"),
-        }
+    if not data_payload:
+        flat_keys = ("deviceId", "sensorId", "metric", "value", "unit", "locationId", "temperature", "humidity", "motion", "gasPpm")
+        if any(k in body for k in flat_keys):
+            data_payload = {k: body[k] for k in flat_keys if k in body}
 
     event_record = {
         "eventId": event_id,
@@ -468,45 +665,56 @@ async def ingest_event(request: Request):
         "correlationId": correlation_id,
         "payload": data_payload,
         "timestamp": occurred_at,
-        "receivedAt": datetime.now(timezone.utc).isoformat(),
+        "receivedAt": now_str,
     }
-    EVENTS_DB.insert(0, event_record)
+    store.create_event(event_record)
 
-    # Tự động tạo Alert nếu cảm biến báo quá ngưỡng (Core Business Rule Engine)
     metric = data_payload.get("metric")
     val = data_payload.get("value")
-    if event_type == "sensor.threshold.exceeded" or (metric == "temperature" and isinstance(val, (int, float)) and val > 40.0):
-        alert_id = str(uuid.uuid4())
-        ALERTS_DB[alert_id] = {
-            "id": alert_id,
-            "sourceService": "iot-ingestion",
-            "alertType": "OVERHEAT_CRITICAL" if val and val > 50 else "TEMPERATURE_HIGH",
-            "severity": "CRITICAL" if val and val > 50 else "HIGH",
-            "message": f"Cảm biến {data_payload.get('deviceId', 'SENSOR')} tại {data_payload.get('locationId', 'Campus')} đo được {val}°C (vượt ngưỡng an toàn)!",
+    if metric is None and "temperature" in data_payload:
+        metric = "temperature"
+        val = data_payload.get("temperature")
+
+    is_overheat = (
+        event_type == "sensor.threshold.exceeded"
+        or (metric == "temperature" and isinstance(val, (int, float)) and val > TEMP_HIGH_THRESHOLD)
+    )
+    if is_overheat:
+        is_critical = isinstance(val, (int, float)) and val > TEMP_CRITICAL_THRESHOLD
+        device_label = data_payload.get("deviceId") or data_payload.get("sensorId") or "SENSOR"
+        loc_label = data_payload.get("locationId") or "Campus"
+        alert_record = {
+            "id": str(uuid.uuid4()),
+            "sourceService": source,
+            "alertType": "SENSOR_THRESHOLD_EXCEEDED",
+            "severity": "CRITICAL" if is_critical else "HIGH",
+            "message": f"Cảm biến {device_label} tại {loc_label} đo được {val}°C (vượt ngưỡng {TEMP_HIGH_THRESHOLD}°C)!",
+            "relatedEventId": event_id,
             "status": "OPEN",
-            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "createdAt": now_str,
             "resolvedAt": None,
         }
+        store.create_alert(alert_record)
+        background_tasks.add_task(dispatch_alert_side_effects, alert_record, loc_label, correlation_id)
 
     return {
         "eventId": event_id,
-        "acceptedAt": datetime.now(timezone.utc).isoformat(),
+        "acceptedAt": now_str,
     }
 
 
 # -------------------------------
-# Plug-a-thon LAN Integrations & Dashboard
+# Plug-a-thon LAN & Mock Compose Integrations
 # -------------------------------
 def ping_service(service_name: str, base_url: str) -> Dict[str, Any]:
-    """Hàm helper kiểm tra kết nối tới 1 service trong mạng LAN với timeout 2.0s."""
+    """Kiểm tra kết nối /health tới 1 partner service với timeout ngắn 1.5s."""
     target_url = f"{base_url.rstrip('/')}/health"
     try:
         start_time = datetime.now()
-        resp = requests.get(target_url, timeout=2.0)
+        resp = requests.get(target_url, timeout=1.5)
         elapsed_ms = int((datetime.now() - start_time).total_seconds() * 1000)
-        
+
         is_ok = resp.status_code in (200, 201)
-        response_data = {}
         try:
             response_data = resp.json()
         except Exception:
@@ -520,28 +728,19 @@ def ping_service(service_name: str, base_url: str) -> Dict[str, Any]:
             "latencyMs": elapsed_ms,
             "response": response_data,
         }
-    except Exception as e:
+    except Exception as exc:
         return {
             "service": service_name,
             "url": base_url,
             "status": "OFFLINE",
             "statusCode": None,
             "latencyMs": None,
-            "error": str(e),
+            "error": str(exc),
         }
 
 
-@app.get("/integrations/status", tags=["integrations"])
-async def check_all_lan_integrations():
-    """
-    Dashboard kiểm tra kết nối thời gian thực đến toàn bộ 5 đối tác trong mạng LAN:
-    - AI Vision (nhận diện khuôn mặt)
-    - IoT Ingestion (cảm biến môi trường)
-    - Access Gate (kiểm soát cổng)
-    - Analytics (thống kê & audit)
-    - Notification (thông báo khẩn cấp)
-    """
-    services_to_check = {
+def _partner_map() -> Dict[str, str]:
+    return {
         "ai-vision": AI_VISION_URL,
         "iot-ingestion": IOT_SERVICE_URL,
         "access-gate": GATE_SERVICE_URL,
@@ -549,17 +748,45 @@ async def check_all_lan_integrations():
         "notification": NOTIFICATION_SERVICE_URL,
     }
 
-    results = {}
-    online_count = 0
-    for name, url in services_to_check.items():
-        res = ping_service(name, url)
-        results[name] = res
-        if res["status"] == "ONLINE":
-            online_count += 1
+
+@app.get("/integrations/config", tags=["integrations"])
+async def get_integration_config():
+    """Trả về cấu hình đối tác & storage hiện hành để Dashboard hiển thị động (không chứa secret)."""
+    return {
+        "service": SERVICE_NAME,
+        "version": SERVICE_VERSION,
+        "env": ENV_MODE,
+        "storageBackend": store.backend_name,
+        "storageHealth": store.health_check(),
+        "authConfigured": bool(AUTH_TOKEN),
+        "partners": _partner_map(),
+        "mqtt": {
+            "host": MQTT_BROKER_HOST,
+            "port": MQTT_BROKER_PORT,
+            "topic": MQTT_TOPIC_BUSINESS_EVENTS,
+        },
+        "thresholds": {
+            "temperatureHigh": TEMP_HIGH_THRESHOLD,
+            "temperatureCritical": TEMP_CRITICAL_THRESHOLD,
+            "accessRateLimitPerMin": ACCESS_RATE_LIMIT_MAX,
+        },
+    }
+
+
+@app.get("/integrations/status", tags=["integrations"])
+async def check_all_lan_integrations():
+    """Kiểm tra đồng thời trạng thái /health của toàn bộ 5 dịch vụ đối tác qua thread pool."""
+    services_to_check = _partner_map()
+    tasks = [anyio.to_thread.run_sync(ping_service, name, url) for name, url in services_to_check.items()]
+    checked = await asyncio.gather(*tasks)
+
+    results = {item["service"]: item for item in checked}
+    online_count = sum(1 for item in checked if item["status"] == "ONLINE")
 
     return {
         "summary": {
             "coreBusinessVersion": SERVICE_VERSION,
+            "storageBackend": store.backend_name,
             "totalPartners": len(services_to_check),
             "onlinePartners": online_count,
             "offlinePartners": len(services_to_check) - online_count,
@@ -571,7 +798,7 @@ async def check_all_lan_integrations():
 
 @app.get("/integrations/{service_name}/health", tags=["integrations"])
 async def check_single_service_health(service_name: str):
-    """Kiểm tra kết nối trực tiếp đến 1 service cụ thể qua mạng LAN."""
+    """Kiểm tra kết nối trực tiếp đến 1 service cụ thể."""
     service_map = {
         "ai-vision": AI_VISION_URL,
         "iot": IOT_SERVICE_URL,
@@ -582,245 +809,186 @@ async def check_single_service_health(service_name: str):
         "notification": NOTIFICATION_SERVICE_URL,
         "notify": NOTIFICATION_SERVICE_URL,
     }
-    
     if service_name not in service_map:
         raise HTTPException(
             status_code=404,
-            detail=f"Service '{service_name}' không hợp lệ. Các service hỗ trợ: {list(service_map.keys())}"
+            detail=f"Service '{service_name}' không hợp lệ. Các service hỗ trợ: {list(service_map.keys())}",
         )
-
-    return ping_service(service_name, service_map[service_name])
+    return await anyio.to_thread.run_sync(ping_service, service_name, service_map[service_name])
 
 
 @app.get("/integrations/gate/cards/{card_id}", tags=["integrations"])
 async def get_gate_card_info(card_id: str):
-    """
-    Gọi sang Access Gate Service (/cards/{cardId}) với Bearer token để tra cứu dữ liệu thẻ.
-    """
-    try:
-        target_url = f"{GATE_SERVICE_URL.rstrip('/')}/cards/{card_id}"
-        headers = {"Authorization": f"Bearer {GATE_AUTH_TOKEN}"}
-        resp = requests.get(target_url, headers=headers, timeout=3.0)
-        card_data = {}
-        try:
-            card_data = resp.json()
-        except Exception:
-            card_data = {"raw": resp.text}
-
-        return {
-            "status": "success" if resp.status_code == 200 else "failed",
-            "gateUrl": target_url,
-            "statusCode": resp.status_code,
-            "cardId": card_id,
-            "data": card_data,
-        }
-    except Exception as e:
-        return {
-            "status": "error",
-            "gateUrl": f"{GATE_SERVICE_URL.rstrip('/')}/cards/{card_id}",
-            "error": str(e),
-        }
+    """Gọi sang Access Gate Service (/cards/{cardId}) với Bearer token."""
+    target_url = f"{GATE_SERVICE_URL.rstrip('/')}/cards/{card_id}"
+    res = await anyio.to_thread.run_sync(
+        lambda: _proxy_partner_request("GET", target_url, headers={"Authorization": f"Bearer {GATE_AUTH_TOKEN}"})
+    )
+    if res["status"] == "error":
+        return {"status": "error", "gateUrl": target_url, "error": res["error"]}
+    return {
+        "status": res["status"],
+        "gateUrl": target_url,
+        "statusCode": res["statusCode"],
+        "cardId": card_id,
+        "data": res["body"],
+    }
 
 
 @app.get("/integrations/gate/logs/recent", tags=["integrations"])
 async def get_gate_recent_logs(limit: int = 5):
-    """
-    Gọi sang Access Gate Service (GET /access/logs/recent?limit=5)
-    để lấy dữ liệu quẹt thẻ thật real-time (UID 04:A1:B2:C3:D4:0X, granted/denied).
-    """
-    try:
-        target_url = f"{GATE_SERVICE_URL.rstrip('/')}/access/logs/recent?limit={limit}"
-        headers = {"Authorization": f"Bearer {GATE_AUTH_TOKEN}"}
-        resp = requests.get(target_url, headers=headers, timeout=3.0)
-        logs_data = {}
-        try:
-            logs_data = resp.json()
-        except Exception:
-            logs_data = {"raw": resp.text}
-
-        return {
-            "status": "success" if resp.status_code == 200 else "failed",
-            "gateUrl": target_url,
-            "statusCode": resp.status_code,
-            "logs": logs_data,
-        }
-    except Exception as e:
-        return {
-            "status": "error",
-            "gateUrl": f"{GATE_SERVICE_URL.rstrip('/')}/access/logs/recent?limit={limit}",
-            "error": str(e),
-        }
+    """Gọi sang Access Gate Service (GET /access/logs/recent)."""
+    target_url = f"{GATE_SERVICE_URL.rstrip('/')}/access/logs/recent?limit={limit}"
+    res = await anyio.to_thread.run_sync(
+        lambda: _proxy_partner_request("GET", target_url, headers={"Authorization": f"Bearer {GATE_AUTH_TOKEN}"})
+    )
+    if res["status"] == "error":
+        return {"status": "error", "gateUrl": target_url, "error": res["error"]}
+    return {"status": res["status"], "gateUrl": target_url, "statusCode": res["statusCode"], "logs": res["body"]}
 
 
 @app.get("/integrations/gate/gates/{gate_id}/status", tags=["integrations"])
 async def get_gate_barrier_status(gate_id: str = "GATE-01"):
-    """
-    Gọi sang Access Gate Service (GET /gates/{gateId}/status)
-    để kiểm tra trạng thái vật lý cổng barrier.
-    """
-    try:
-        target_url = f"{GATE_SERVICE_URL.rstrip('/')}/gates/{gate_id}/status"
-        headers = {"Authorization": f"Bearer {GATE_AUTH_TOKEN}"}
-        resp = requests.get(target_url, headers=headers, timeout=3.0)
-        status_data = {}
-        try:
-            status_data = resp.json()
-        except Exception:
-            status_data = {"raw": resp.text}
-
-        return {
-            "status": "success" if resp.status_code == 200 else "failed",
-            "gateUrl": target_url,
-            "statusCode": resp.status_code,
-            "gateId": gate_id,
-            "data": status_data,
-        }
-    except Exception as e:
-        return {
-            "status": "error",
-            "gateUrl": f"{GATE_SERVICE_URL.rstrip('/')}/gates/{gate_id}/status",
-            "error": str(e),
-        }
+    """Gọi sang Access Gate Service (GET /gates/{gateId}/status)."""
+    target_url = f"{GATE_SERVICE_URL.rstrip('/')}/gates/{gate_id}/status"
+    res = await anyio.to_thread.run_sync(
+        lambda: _proxy_partner_request("GET", target_url, headers={"Authorization": f"Bearer {GATE_AUTH_TOKEN}"})
+    )
+    if res["status"] == "error":
+        return {"status": "error", "gateUrl": target_url, "error": res["error"]}
+    return {
+        "status": res["status"],
+        "gateUrl": target_url,
+        "statusCode": res["statusCode"],
+        "gateId": gate_id,
+        "data": res["body"],
+    }
 
 
 @app.post("/integrations/ai-vision/face-match", tags=["integrations"])
 async def test_ai_vision_face_match(payload: Optional[Dict[str, Any]] = None):
-    """
-    Gọi sang AI Vision Service (POST /vision/face-match) để kiểm tra so khớp khuôn mặt.
-    """
-    try:
-        target_url = f"{AI_VISION_URL.rstrip('/')}/vision/face-match"
-        headers = {
-            "Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}",
-            "Content-Type": "application/json",
-        }
-        body = payload or {
-            "image_url": "http://192.168.137.115:8001/cameras/cam-lab05-gate/frames/latest",
-            "reference_image_url": "http://192.168.137.79:8001/profiles/student-001.jpg",
-            "threshold": 0.75,
-            "trace_id": f"trace-core-{int(datetime.now().timestamp())}",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-        resp = requests.post(target_url, json=body, headers=headers, timeout=4.0)
-        return {
-            "status": "success" if resp.status_code == 200 else "failed",
-            "statusCode": resp.status_code,
-            "result": resp.json() if "application/json" in resp.headers.get("content-type", "") else resp.text,
-        }
-    except Exception as e:
-        return {"status": "error", "error": str(e)}
+    """Gọi sang AI Vision Service (POST /vision/face-match)."""
+    target_url = f"{AI_VISION_URL.rstrip('/')}/vision/face-match"
+    headers = {"Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}", "Content-Type": "application/json"}
+    body = payload or {
+        "image_url": "http://storage.campus.local/cameras/cam-gate-01/frames/latest.jpg",
+        "reference_image_url": "http://storage.campus.local/profiles/student-001.jpg",
+        "threshold": 0.75,
+        "trace_id": f"trace-core-{int(datetime.now().timestamp())}",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    res = await anyio.to_thread.run_sync(
+        lambda: _proxy_partner_request("POST", target_url, headers=headers, json_body=body, timeout=4.0)
+    )
+    if res["status"] == "error":
+        return {"status": "error", "error": res["error"]}
+    return {"status": res["status"], "statusCode": res["statusCode"], "result": res["body"]}
 
 
 @app.get("/integrations/ai-vision/models", tags=["integrations"])
 async def test_ai_vision_models():
-    """
-    Gọi sang AI Vision Service (GET /vision/models/info) để lấy thông tin model YOLOv8.
-    """
-    try:
-        target_url = f"{AI_VISION_URL.rstrip('/')}/vision/models/info"
-        headers = {"Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}"}
-        resp = requests.get(target_url, headers=headers, timeout=3.0)
-        return {
-            "status": "success" if resp.status_code == 200 else "failed",
-            "statusCode": resp.status_code,
-            "modelInfo": resp.json() if "application/json" in resp.headers.get("content-type", "") else resp.text,
-        }
-    except Exception as e:
-        return {"status": "error", "error": str(e)}
+    """Gọi sang AI Vision Service (GET /vision/models/info)."""
+    target_url = f"{AI_VISION_URL.rstrip('/')}/vision/models/info"
+    res = await anyio.to_thread.run_sync(
+        lambda: _proxy_partner_request("GET", target_url, headers={"Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}"})
+    )
+    if res["status"] == "error":
+        return {"status": "error", "error": res["error"]}
+    return {"status": res["status"], "statusCode": res["statusCode"], "modelInfo": res["body"]}
 
 
 @app.post("/integrations/ai-vision/detect", tags=["integrations"])
 async def test_ai_vision_detect(payload: Optional[Dict[str, Any]] = None):
-    """
-    Gọi sang AI Vision Service (POST /vision/detect) để phát hiện đối tượng trong ảnh theo hợp đồng.
-    """
-    try:
-        target_url = f"{AI_VISION_URL.rstrip('/')}/vision/detect"
-        headers = {
-            "Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}",
-            "Content-Type": "application/json",
-        }
-        body = payload or {
-            "camera_id": "cam-gate-01",
-            "image_url": "http://storage.campus.local/images/frame-20260811-001.jpg",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "confidence_threshold": 0.6,
-        }
-        resp = requests.post(target_url, json=body, headers=headers, timeout=4.0)
-        return {
-            "status": "success" if resp.status_code == 200 else "failed",
-            "statusCode": resp.status_code,
-            "result": resp.json() if "application/json" in resp.headers.get("content-type", "") else resp.text,
-        }
-    except Exception as e:
-        return {"status": "error", "error": str(e)}
+    """Gọi sang AI Vision Service (POST /vision/detect)."""
+    target_url = f"{AI_VISION_URL.rstrip('/')}/vision/detect"
+    headers = {"Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}", "Content-Type": "application/json"}
+    body = payload or {
+        "camera_id": "cam-gate-01",
+        "image_url": "http://storage.campus.local/images/frame-20260811-001.jpg",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "confidence_threshold": 0.6,
+    }
+    res = await anyio.to_thread.run_sync(
+        lambda: _proxy_partner_request("POST", target_url, headers=headers, json_body=body, timeout=4.0)
+    )
+    if res["status"] == "error":
+        return {"status": "error", "error": res["error"]}
+    return {"status": res["status"], "statusCode": res["statusCode"], "result": res["body"]}
 
 
 @app.get("/integrations/ai-vision/detections/{detection_id}", tags=["integrations"])
 async def get_ai_vision_detection_by_id(detection_id: str):
-    """
-    Gọi sang AI Vision Service (GET /vision/detections/{detectionId}) để lấy chi tiết kết quả detection.
-    """
-    try:
-        target_url = f"{AI_VISION_URL.rstrip('/')}/vision/detections/{detection_id}"
-        headers = {"Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}"}
-        resp = requests.get(target_url, headers=headers, timeout=3.0)
-        return {
-            "status": "success" if resp.status_code == 200 else "failed",
-            "statusCode": resp.status_code,
-            "detectionId": detection_id,
-            "result": resp.json() if "application/json" in resp.headers.get("content-type", "") else resp.text,
-        }
-    except Exception as e:
-        return {"status": "error", "error": str(e)}
+    """Gọi sang AI Vision Service (GET /vision/detections/{detectionId})."""
+    target_url = f"{AI_VISION_URL.rstrip('/')}/vision/detections/{detection_id}"
+    res = await anyio.to_thread.run_sync(
+        lambda: _proxy_partner_request("GET", target_url, headers={"Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}"})
+    )
+    if res["status"] == "error":
+        return {"status": "error", "error": res["error"]}
+    return {"status": res["status"], "statusCode": res["statusCode"], "detectionId": detection_id, "result": res["body"]}
 
 
 @app.get("/integrations/ai-vision/results/recent", tags=["integrations"])
 async def get_ai_vision_recent_results(limit: int = 10, camera_id: Optional[str] = None):
-    """
-    Gọi sang AI Vision Service (GET /vision/results/recent) để lấy danh sách detection gần đây.
-    """
-    try:
-        target_url = f"{AI_VISION_URL.rstrip('/')}/vision/results/recent?limit={limit}"
-        if camera_id:
-            target_url += f"&camera_id={camera_id}"
-        headers = {"Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}"}
-        resp = requests.get(target_url, headers=headers, timeout=3.0)
-        return {
-            "status": "success" if resp.status_code == 200 else "failed",
-            "statusCode": resp.status_code,
-            "result": resp.json() if "application/json" in resp.headers.get("content-type", "") else resp.text,
-        }
-    except Exception as e:
-        return {"status": "error", "error": str(e)}
+    """Gọi sang AI Vision Service (GET /vision/results/recent)."""
+    target_url = f"{AI_VISION_URL.rstrip('/')}/vision/results/recent?limit={limit}"
+    if camera_id:
+        target_url += f"&camera_id={camera_id}"
+    res = await anyio.to_thread.run_sync(
+        lambda: _proxy_partner_request("GET", target_url, headers={"Authorization": f"Bearer {AI_VISION_AUTH_TOKEN}"})
+    )
+    if res["status"] == "error":
+        return {"status": "error", "error": res["error"]}
+    return {"status": res["status"], "statusCode": res["statusCode"], "result": res["body"]}
+
+
+@app.post("/integrations/notification/send", tags=["integrations"])
+async def trigger_notification_send(payload: NotificationDispatchPayload):
+    """Gửi thông báo trực tiếp qua Notification Service (POST /notifications/send)."""
+    return await anyio.to_thread.run_sync(
+        lambda: dispatch_notification(
+            subject=payload.subject,
+            message=payload.message,
+            severity=payload.severity,
+            recipient=payload.recipient,
+            channel=payload.channel,
+        )
+    )
 
 
 @app.post("/vision/detection-result", status_code=status.HTTP_200_OK, tags=["ai-vision-webhook"])
-async def receive_ai_vision_detection(request: Request):
+async def receive_ai_vision_detection(request: Request, background_tasks: BackgroundTasks):
     """
-    Endpoint Webhook để nhận kết quả detection từ AI Vision Service theo hợp đồng OpenAPI 3.1.0.
-    Core Business áp dụng rule nghiệp vụ:
-    - Nếu phát hiện người trong khu vực cấm / risk_level HIGH -> Tạo alert UNKNOWN_PERSON / SUSPICIOUS_OBJECT.
-    - Trả về AIVisionResultAck xác nhận cho AI Vision.
+    Endpoint Webhook nhận kết quả detection từ AI Vision Service theo OpenAPI 3.1.0.
+    Nếu phát hiện đối tượng nguy cơ cao hoặc tại restricted_area -> tự động tạo Alert + gửi MQTT & Notification.
     """
     try:
         body = await request.json()
     except Exception:
         body = {}
 
+    if not isinstance(body, dict) or not body.get("camera_id"):
+        return problem_details_response(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            title="Dữ liệu không hợp lệ về nghiệp vụ",
+            detail="Webhook /vision/detection-result yêu cầu trường camera_id",
+            instance=str(request.url.path),
+            errors=[{"field": "camera_id", "code": "REQUIRED", "message": "camera_id là bắt buộc"}],
+        )
+
     detection_id = body.get("detection_id") or str(uuid.uuid4())
-    camera_id = body.get("camera_id", "cam-default")
+    camera_id = body["camera_id"]
     detections = body.get("detections", [])
     risk_level = str(body.get("risk_level", "LOW")).upper()
     metadata = body.get("metadata", {})
     ack_id = str(uuid.uuid4())
     now_str = datetime.now(timezone.utc).isoformat()
 
-    # Lưu detection vào luồng sự kiện đa hình
     event_record = {
         "eventId": str(uuid.uuid4()),
         "sourceService": "ai-vision",
         "eventType": "AI_VISION_DETECTION",
+        "correlationId": detection_id,
         "payload": {
             "detection_id": detection_id,
             "camera_id": camera_id,
@@ -831,12 +999,15 @@ async def receive_ai_vision_detection(request: Request):
         "timestamp": body.get("timestamp") or now_str,
         "receivedAt": now_str,
     }
-    EVENTS_DB.insert(0, event_record)
+    store.create_event(event_record)
 
-    # Core Business Rule Engine: Đánh giá nguy cơ
     if risk_level in ("HIGH", "CRITICAL") or metadata.get("location") == "restricted_area":
         alert_id = str(uuid.uuid4())
-        alert_type = "SUSPICIOUS_OBJECT" if any(d.get("label") not in ("person", "human") for d in detections) else "UNKNOWN_PERSON"
+        alert_type = (
+            "SUSPICIOUS_OBJECT"
+            if any(d.get("label") not in ("person", "human") for d in detections if isinstance(d, dict))
+            else "UNKNOWN_PERSON"
+        )
         alert_record = {
             "id": alert_id,
             "sourceService": "ai-vision",
@@ -848,16 +1019,8 @@ async def receive_ai_vision_detection(request: Request):
             "createdAt": now_str,
             "resolvedAt": None,
         }
-        ALERTS_DB[alert_id] = alert_record
-
-        # Tự động đẩy qua MQTT sang Analytics
-        publish_mqtt_event("business.alert.created", {
-            "alert_id": alert_id,
-            "alert_type": alert_type,
-            "location": camera_id,
-            "severity": risk_level,
-            "created_at": now_str,
-        })
+        store.create_alert(alert_record)
+        background_tasks.add_task(dispatch_alert_side_effects, alert_record, camera_id, detection_id)
 
         return {
             "ack_id": ack_id,
@@ -880,96 +1043,54 @@ async def receive_ai_vision_detection(request: Request):
     }
 
 
-# -------------------------------
-# MQTT Integration (Analytics Service Pair 08)
-# -------------------------------
-def publish_mqtt_event(event_type: str, data: Dict[str, Any], correlation_id: Optional[str] = None):
-    """
-    Publish sự kiện nghiệp vụ sang Analytics Service qua MQTT Broker (192.168.1.51:1883)
-    theo đúng chuẩn hợp đồng event-contract-08-core-analytics.md (Topic: business.events).
-    """
-    payload = {
-        "eventId": str(uuid.uuid4()),
-        "eventType": event_type,
-        "occurredAt": datetime.now(timezone.utc).isoformat(),
-        "correlationId": correlation_id or f"req-{uuid.uuid4()}",
-        "source": "core-business",
-        "data": data,
-    }
-    try:
-        import paho.mqtt.publish as publish
-        publish.single(
-            topic=MQTT_TOPIC_BUSINESS_EVENTS,
-            payload=json.dumps(payload),
-            hostname=MQTT_BROKER_HOST,
-            port=MQTT_BROKER_PORT,
-            keepalive=3,
-        )
-    except Exception as e:
-        print(f"[MQTT] Publish to {MQTT_BROKER_HOST}:{MQTT_BROKER_PORT} error: {e}")
-
-
 @app.post("/integrations/analytics/mqtt/publish", tags=["integrations"])
 async def trigger_mqtt_publish(event_type: str = "business.alert.created"):
-    """
-    Bắn thử nghiệm sự kiện MQTT sang Analytics Service (192.168.1.51:1883)
-    vào topic 'business.events'.
-    """
+    """Bắn thử nghiệm sự kiện MQTT sang Analytics Service vào topic 'business.events'."""
+    now_str = datetime.now(timezone.utc).isoformat()
     sample_data = {
         "business.alert.created": {
             "alert_id": "ALT-" + str(uuid.uuid4())[:8].upper(),
             "alert_type": "UNAUTHORIZED_ACCESS",
             "location": "GATE-01",
             "severity": "HIGH",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": now_str,
         },
         "business.policy.decision.created": {
             "decision_id": "DEC-" + str(uuid.uuid4())[:8].upper(),
+            "policy_type": "ACCESS",
+            "decision": "ALLOW",
+            "location": "GATE-01",
+            "subject_type": "STUDENT",
+            "decided_at": now_str,
             "card_id": "RFID-2026-001",
             "gate_id": "GATE-01",
             "direction": "IN",
             "result": "ALLOW",
-            "evaluated_at": datetime.now(timezone.utc).isoformat(),
+            "evaluated_at": now_str,
         },
         "business.alert.resolved": {
             "alert_id": "ALT-001",
-            "resolved_at": datetime.now(timezone.utc).isoformat(),
-        }
+            "resolved_at": now_str,
+        },
     }
     data = sample_data.get(event_type, {"message": "Test event from Core Business"})
-    payload = {
-        "eventId": str(uuid.uuid4()),
-        "eventType": event_type,
-        "occurredAt": datetime.now(timezone.utc).isoformat(),
-        "correlationId": f"trace-{uuid.uuid4()}",
-        "source": "core-business",
-        "data": data,
-    }
-    try:
-        import paho.mqtt.publish as publish
-        publish.single(
-            topic=MQTT_TOPIC_BUSINESS_EVENTS,
-            payload=json.dumps(payload),
-            hostname=MQTT_BROKER_HOST,
-            port=MQTT_BROKER_PORT,
-            keepalive=3,
-        )
+    res = await anyio.to_thread.run_sync(lambda: publish_mqtt_event(event_type, data))
+    if res["status"] == "success":
         return {
             "status": "success",
             "message": f"Đã publish thành công event '{event_type}' lên topic '{MQTT_TOPIC_BUSINESS_EVENTS}' tại {MQTT_BROKER_HOST}:{MQTT_BROKER_PORT}!",
             "broker": f"mqtt://{MQTT_BROKER_HOST}:{MQTT_BROKER_PORT}",
             "topic": MQTT_TOPIC_BUSINESS_EVENTS,
-            "publishedPayload": payload,
+            "publishedPayload": res["payload"],
         }
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Không thể kết nối tới MQTT Broker tại {MQTT_BROKER_HOST}:{MQTT_BROKER_PORT}",
-            "error": str(e),
-            "broker": f"mqtt://{MQTT_BROKER_HOST}:{MQTT_BROKER_PORT}",
-            "topic": MQTT_TOPIC_BUSINESS_EVENTS,
-            "attemptedPayload": payload,
-        }
+    return {
+        "status": "error",
+        "message": f"Không thể kết nối tới MQTT Broker tại {MQTT_BROKER_HOST}:{MQTT_BROKER_PORT}",
+        "error": res.get("error"),
+        "broker": f"mqtt://{MQTT_BROKER_HOST}:{MQTT_BROKER_PORT}",
+        "topic": MQTT_TOPIC_BUSINESS_EVENTS,
+        "attemptedPayload": res["payload"],
+    }
 
 
 # -------------------------------
@@ -984,7 +1105,3 @@ async def serve_dashboard():
         with open(template_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     return HTMLResponse(content="<h1>Smart Campus Live Dashboard is active!</h1>")
-
-
-
-

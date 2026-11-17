@@ -1,89 +1,93 @@
 # RUN_COMPOSE.md — Vận Hành Core Business Service (Smart Campus Operations Platform)
 
-Tài liệu hướng dẫn triển khai **Core Business Service** và kết nối thời gian thực với các nhóm đối tác (**AI Vision**, **IoT Ingestion**, **Access Gate**, **Analytics**, **Notification**) trong mạng LAN.
+Hướng dẫn triển khai **Core Business Service** trên 2 chế độ:
+1. **Local Mock Integration (`--profile mock`)**: Chạy trọn bộ Core + PostgreSQL + 5 Mock Services trên 1 máy để kiểm thử khép kín.
+2. **Plug-a-thon LAN Mode**: Kết nối trực tiếp tới máy của các nhóm đối tác thật trong cùng mạng Wi-Fi/LAN.
 
 ---
 
-## 1. Thông Tin Dịch Vụ & Container Chuẩn Toàn Dự Án
+## 1. Danh Sách Dịch Vụ & Port Chuẩn
 
-| Service | Tên Container Chuẩn | Port Trên Máy (Host) | Port Nội Bộ (Container) | Vai Trò Nghiệp Vụ |
-|---|---|:---:|:---:|---|
-| **Core Business API** | `smartcampus-core-service` | **`8001`** | `8000` | Nhận events/alerts, đánh giá chính sách ra vào |
-| **PostgreSQL 15 DB** | `smartcampus-core-db` | **`5433`** | `5432` | Lưu trữ quyết định, chính sách, danh sách cảnh báo |
-
-> **Cách đối tác trong mạng LAN kết nối đến Core:**
-> - URL gốc: `http://<IP_MÁY_CORE>:8001`
-> - Ví dụ: `http://192.168.137.25:8001/health`
+| Service | Tên Container | Host Port | Container Port | Vai Trò |
+|---|---|---:|---:|---|
+| **Core Business API** | `smartcampus-core-service` | `8001` | `8000` | API trung tâm, Rule Engine, Live Dashboard (`http://localhost:8001/dashboard`) |
+| **PostgreSQL 15 DB** | `smartcampus-core-db` | `5433` | `5432` | Lưu trữ bền vững alerts, policies, decisions, events, idempotency keys |
+| **AI Vision Mock** *(profile `mock`)* | `smartcampus-ai-mock` | `9001` | `9000` | Giả lập `/vision/face-match`, `/vision/detect`, `/vision/models/info` |
+| **IoT Mock** *(profile `mock`)* | `smartcampus-iot-mock` | `9002` | `9000` | Giả lập `/health`, `/telemetry` |
+| **Access Gate Mock** *(profile `mock`)* | `smartcampus-gate-mock` | `9003` | `9000` | Giả lập `/cards/{cardId}`, `/gates/{gateId}/status`, `/access/logs/recent` |
+| **Analytics Mock** *(profile `mock`)* | `smartcampus-analytics-mock` | `9004` | `9000` | Giả lập `/health`, `/metrics/summary` |
+| **Notification Mock** *(profile `mock`)* | `smartcampus-notify-mock` | `9005` | `9000` | Giả lập `/notifications/send` và `GET /notifications` |
 
 ---
 
-## 2. Cấu Hình Địa Chỉ IP Các Nhóm Đối Tác (File `.env`)
+## 2. Chuyển Đổi Kiểu Lưu Trữ (Dual Storage: PostgreSQL & In-Memory)
 
-Mở file `.env` và điền địa chỉ IPv4 máy tính của các nhóm bạn bè:
+Core Business hỗ trợ cả **2 kiểu lưu trữ** trong `src/core_app/storage.py`:
 
+- **Chế độ `postgres` (mặc định Docker Compose)**: Dữ liệu lưu vào PostgreSQL (`smartcampus-core-db`).
+- **Chế độ `memory` (In-Memory RAM)**: Tiện chạy cục bộ bằng Uvicorn không cần Postgres.
+
+Mở file `.env` (copy từ `.env.example`) và mở/comment 1 trong 2 dòng:
 ```env
-# 1. Nhóm AI Vision (Nhận diện khuôn mặt)
-AI_VISION_URL=http://192.168.137.1:8000
-
-# 2. Nhóm IoT Ingestion (Cảm biến môi trường)
-IOT_SERVICE_URL=http://192.168.137.10:8000
-
-# 3. Nhóm Access Gate (Kiểm soát cổng barrier)
-GATE_SERVICE_URL=http://192.168.137.20:8000
-
-# 4. Nhóm Analytics (Thống kê và phân tích số liệu)
-ANALYTICS_SERVICE_URL=http://192.168.137.30:8000
-
-# 5. Nhóm Notification (Gửi cảnh báo Email/SMS/Push)
-NOTIFICATION_SERVICE_URL=http://192.168.137.40:8000
+STORAGE_BACKEND=postgres
+# STORAGE_BACKEND=memory
 ```
+Hoặc có thể comment/bỏ comment trực tiếp biến `backend = "postgres"` / `backend = "memory"` trong hàm `create_store()` tại `src/core_app/storage.py`.
 
 ---
 
-## 3. Trung Tâm Điều Khiển Trực Quan (Live Web Dashboard)
+## 3. Chạy Kịch Bản 1: Full Local Mock Stack (`--profile mock`)
 
-Mở trực tiếp trên trình duyệt Web: **`http://localhost:8001`** (hoặc `http://<IP_MÁY_BẠN>:8001`)
-
-* 🌐 **Tab 1 - Radar Mạng LAN:** Xem trực quan trạng thái 5 nhóm (ONLINE/OFFLINE), độ trễ Ping (ms).
-* 📥 **Tab 2 - Dữ Liệu Nhận Về (Inbound):** Theo dõi Cảnh Báo An Ninh, Lịch Sử Quẹt Thẻ Gate, Luồng Sự Kiện IoT.
-* 📤 **Tab 3 - Tương Tác Gửi Đi (Outbound):** Form tra cứu thẻ bên Gate, gọi so khớp khuôn mặt bên AI Vision, kiểm tra Analytics.
-* 🎮 **Tab 4 - Trình Giả Lập & Bắn Dữ Liệu:** Bắn thử nghiệm Event, Alert, Swipe chỉ với 1 click chuột!
-* 📋 **Tab 5 - Hợp Đồng API:** Tra cứu danh mục API của Core Business để chia sẻ cho các nhóm.
-
----
-
-## 4. Các Lệnh Vận Hành Nhanh
+Dùng file override `docker-compose.mock.yml` để container `api` gọi trực tiếp tới `http://*-mock:9000` trong mạng nội bộ `smartcampus-network`:
 
 ```powershell
-# 1. Khởi động Stack Core Business (API + PostgreSQL)
-docker compose up -d
+# 1. Tạo .env (nếu chưa có)
+Copy-Item .env.example .env
 
-# 2. Mở Web Dashboard trên trình duyệt
-Start-Process http://localhost:8001
+# 2. Cài đặt gói Node cho Spectral & Newman (lần đầu)
+npm install
 
-# 3. Kiểm tra trạng thái kết nối tới TOÀN BỘ 5 đối tác trong mạng LAN (bằng CLI)
-curl http://localhost:8001/integrations/status
+# 3. Kiểm tra OpenAPI & cú pháp Docker Compose
+npm run lint:openapi
+npm run lint:compose
 
-# 4. Xem logs thời gian thực khi các nhóm gọi API sang Core
-docker compose logs -f api
+# 4. Khởi chạy Core Business + PostgreSQL + 5 Mock Services
+docker compose -f docker-compose.yml -f docker-compose.mock.yml --profile mock up -d --build --wait
 
-# 5. Chạy kiểm thử tự động Newman (29/29 kịch bản kiểm thử)
+# 5. Mở Live Web Dashboard
+Start-Process http://localhost:8001/dashboard
+
+# 6. Chạy bộ kiểm thử tự động Newman (sinh reports/newman-lab05-compose.html & .xml)
 npm run test:compose
 
-# 6. Dừng hệ thống
-docker compose down
+# 7. Dừng hệ thống
+docker compose -f docker-compose.yml -f docker-compose.mock.yml --profile mock down
 ```
 
 ---
 
-## 4. API Endpoints Dành Cho Các Nhóm Gọi Sang Core Business
+## 4. Chạy Kịch Bản 2: Plug-a-thon LAN Mode
 
-| Nhóm Gọi Sang | Method | Endpoint | Mục Đích |
-|---|---|---|---|
-| **Tất cả các nhóm** | `GET` | `/health` | Kiểm tra trạng thái sẵn sàng của Core |
-| **Tất cả các nhóm** | `GET` | `/integrations/status` | Xem dashboard kiểm tra sức khoẻ toàn mạng LAN |
-| **AI Vision / IoT** | `POST` | `/events` | Bắn sự kiện nhận diện khuôn mặt / đo nhiệt độ |
-| **Tất cả các nhóm** | `POST` | `/alerts` | Báo cáo cảnh báo bất thường (Token: `mock-core-token-2026`) |
-| **Access Gate** | `POST` | `/access/check` | Gửi mã thẻ RFID để Core quyết định cho phép vào hay không |
-| **Analytics** | `GET` | `/alerts/recent` | Lấy danh sách 5 cảnh báo mới nhất phục vụ thống kê |
-| **Analytics** | `GET` | `/decisions/{id}`| Tra cứu vết kiểm toán quyết định ra/vào |
+Khi kết nối với máy thật của các nhóm khác trong cùng mạng LAN:
+1. Mở `.env` cập nhật IP thật (`IOT_SERVICE_URL`, `GATE_SERVICE_URL`, `AI_VISION_URL`, `ANALYTICS_SERVICE_URL`, `MQTT_BROKER_HOST`, `NOTIFICATION_SERVICE_URL`).
+2. Khởi chạy chỉ Core API + PostgreSQL:
+   ```powershell
+   docker compose up -d --build --wait
+   ```
+3. Kiểm tra trạng thái đồng thời 5 nhóm:
+   ```powershell
+   curl http://localhost:8001/integrations/status
+   ```
+   Hoặc mở tab **🌐 6. Radar Toàn Mạng & Hợp Đồng** trên `http://localhost:8001/dashboard`.
+
+---
+
+## 5. Trung Tâm Điều Khiển Live Operations Dashboard (`http://localhost:8001/dashboard`)
+
+Dashboard tải toàn bộ địa chỉ đối tác, cấu hình MQTT và chế độ Storage động từ `GET /integrations/config`:
+- **Tab 1 — Access Gate**: Kéo logs RFID, tra cứu thẻ `GET /cards/{cardId}`, trạng thái barrier, giả lập quẹt thẻ `POST /access/check`.
+- **Tab 2 — AI Vision**: Xem danh sách cảnh báo an ninh, test `face-match` / `YOLO detect` / `models`, giả lập webhook/alert.
+- **Tab 3 — IoT Ingestion**: Theo dõi luồng sự kiện `POST /events`, giả lập nhiệt độ quá ngưỡng `42.5°C` tự sinh Alert.
+- **Tab 4 — Analytics**: Bắn sự kiện kiểm thử MQTT (`business.alert.created`, `business.policy.decision.created`, `business.alert.resolved`) lên `business.events`.
+- **Tab 5 — Notification**: Kiểm tra `/health` và gửi thử thông báo `POST /notifications/send` qua Notification Service.
+- **Tab 6 — Radar Toàn Mạng & Hợp Đồng**: Giám sát ONLINE/OFFLINE thời gian thực và độ trễ ping 5 dịch vụ đối tác.

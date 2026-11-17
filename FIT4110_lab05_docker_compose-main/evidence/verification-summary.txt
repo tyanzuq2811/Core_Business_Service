@@ -1,0 +1,221 @@
+[PASS] Dual storage factory: STORAGE_BACKEND=memory -> InMemoryStore
+[PASS] Dual storage factory: missing DATABASE_URL safely falls back to InMemoryStore
+[PASS] Dual storage factory: STORAGE_BACKEND=postgres -> PostgresStore (executed 9 verified DDL/DML queries under mock psycopg)
+[PASS] InMemoryStore CRUD & idempotency key persistence verified
+[PASS] POL-001 rapid-swipe rate-limit rule verified (DENY / POLICY_DENY after threshold)
+[PASS] Started ai-vision-mock -> http://127.0.0.1:9001/health ({"status": "ok", "service": "ai-vision-mock", "version": "0.5.0"})
+[PASS] Started iot-mock -> http://127.0.0.1:9002/health ({"status": "ok", "service": "iot-ingestion-mock", "version": "0.5.0"})
+[PASS] Started gate-mock -> http://127.0.0.1:9003/health ({"status": "ok", "service": "access-gate-mock", "version": "0.5.0"})
+[PASS] Started analytics-mock -> http://127.0.0.1:9004/health ({"status": "ok", "service": "analytics-mock", "version": "0.5.0"})
+[PASS] Started notify-mock -> http://127.0.0.1:9005/health ({"status": "ok", "service": "notification-mock", "version": "0.5.0"})
+[PASS] Started core-business -> http://127.0.0.1:8001/health ({"status": "ok", "service": "core-business", "version": "0.5.0", "storage": "memory", "time": "2026-11-11T17:16:05.535195+00:00"})
+[PASS] GET /integrations/config returns dynamic partner URLs & storageBackend
+[PASS] GET /dashboard serves HTML without hardcoded LAN IPs or Bearer tokens
+[PASS] GET /integrations/status 5/5 ONLINE in 53ms
+[PASS] POL-001 outside timeWindow 23:30Z -> DENY (OUTSIDE_TIME_WINDOW)
+[PASS] BackgroundTasks delivered 1 HIGH alert notification(s) to notify-mock
+[PASS] Flat IoT payload (temperature=45.2C) accepted with auto-alert
+=== NEWMAN TEST SUITE OUTPUT ===
+
+> fit4110-lab05-docker-compose-readiness@0.1.0 test:compose
+> newman run postman/collections/FIT4110_lab05_core_business.postman_collection.json -e postman/environments/FIT4110_lab05_local.postman_environment.json -r cli,junit,htmlextra --reporter-junit-export reports/newman-lab05-compose.xml --reporter-htmlextra-export reports/newman-lab05-compose.html
+
+newman
+
+FIT4110 Lab05 - Core Business Stack (LAN Plug-a-thon)
+
+□ 00_Health
+└ GET /health - Check service status
+  GET http://localhost:8001/health [200 OK, 246B, 31ms]
+  √  Status code is 200
+  √  Response has service status ok
+  √  Health reports active storage backend
+
+□ 01_Functional
+└ POST /alerts - Create alert (Happy path)
+  POST http://localhost:8001/alerts [201 Created, 465B, 6ms]
+  √  Status code is 201
+  √  Response contains created alert details
+
+└ GET /alerts - List alerts with pagination
+  GET http://localhost:8001/alerts?limit=10 [200 OK, 1.57kB, 3ms]
+  √  Status code is 200
+  √  Response contains items array and pagination info
+
+└ GET /alerts/recent - Get recent alerts
+  GET http://localhost:8001/alerts/recent?limit=5 [200 OK, 1.53kB, 3ms]
+  √  Status code is 200
+  √  Response contains items array
+
+└ GET /alerts/{alertId} - Get alert detail by ID
+  GET http://localhost:8001/alerts/0196fb3d-4ad7-7d1e-9f49-5d5148d2babc [200 OK, 448B, 2ms]
+  √  Status code is 200
+  √  Response contains alert object
+
+└ POST /access/check - Check realtime access policy
+  POST http://localhost:8001/access/check [200 OK, 370B, 3ms]
+  √  Status code is 200
+  √  Valid card at GATE-01 in working hours returns ALLOW
+
+└ GET /policies/access/{policyId} - Get access policy detail
+  GET http://localhost:8001/policies/access/POL-001 [200 OK, 478B, 3ms]
+  √  Status code is 200
+  √  Response contains policy details
+
+└ GET /decisions/{decisionId} - Get decision audit record
+  GET http://localhost:8001/decisions/0196fb3d-4ad7-7d1e-9f49-bbb148d2b002 [200 OK, 358B, 2ms]
+  √  Status code is 200
+  √  Response contains decision audit info
+
+└ POST /events - Ingest campus event
+  POST http://localhost:8001/events [201 Created, 228B, 3ms]
+  √  Status code is 201
+  √  Response confirms event accepted
+
+└ POST /access/check - DENY unauthorized gate (POL-001)
+  POST http://localhost:8001/access/check [200 OK, 370B, 5ms]
+  √  Status code is 200
+  √  Disallowed gate GATE-99 returns DENY / POLICY_DENY
+
+└ POST /alerts/{alertId}/resolve - Resolve created alert
+  POST http://localhost:8001/alerts/a126457d-2fbd-4b27-a454-8476de4d73c7/resolve [200 OK, 494B, 4ms]
+  √  Status code is 200
+  √  Alert transitioned to RESOLVED with timestamp
+
+└ POST /vision/detection-result - Webhook risk HIGH creates Alert
+  POST http://localhost:8001/vision/detection-result [200 OK, 470B, 2ms]
+  √  Status code is 200
+  √  HIGH risk detection creates alert automatically
+
+└ POST /events - High temperature triggers Alert
+  POST http://localhost:8001/events [201 Created, 228B, 2ms]
+  √  Status code is 201
+  √  Overheat event accepted
+
+□ 02_Auth
+└ GET /alerts - Valid token is accepted
+  GET http://localhost:8001/alerts?limit=1 [200 OK, 562B, 2ms]
+  √  Valid token request returns 200
+
+└ POST /alerts - Missing token rejected on real service
+  POST http://localhost:8001/alerts [401 Unauthorized, 343B, 2ms]
+  √  Missing token returns 401 or 403
+
+└ POST /alerts - Invalid token rejected on real service
+  POST http://localhost:8001/alerts [401 Unauthorized, 343B, 2ms]
+  √  Invalid token returns 401 or 403
+
+□ 03_Negative
+└ POST /alerts - Missing required field (ProblemDetails)
+  POST http://localhost:8001/alerts [422 Unprocessable Content, 534B, 3ms]
+  √  Invalid payload returns client error 400 or 422
+  √  Error response follows ProblemDetails schema
+
+└ POST /access/check - Invalid cardId pattern
+  POST http://localhost:8001/access/check [422 Unprocessable Content, 479B, 2ms]
+  √  Pattern mismatch returns client error 400 or 422
+  √  ProblemDetails contains error detail
+
+└ GET /alerts/{alertId} - Non-existent UUID (404)
+  GET http://localhost:8001/alerts/00000000-0000-0000-0000-000000000000 [404 Not Found, 397B, 2ms]
+  √  Non-existent resource returns 404
+  √  ProblemDetails status field is client error (400-499)
+
+└ POST /access/check - Idempotency collision (409 Conflict)
+  POST http://localhost:8001/access/check [409 Conflict, 376B, 2ms]
+  √  Idempotency collision returns 409 Conflict
+  √  ProblemDetails status is 409
+
+└ GET /policies/access/{policyId} - Policy not found (404)
+  GET http://localhost:8001/policies/access/POL-NONEXISTENT [404 Not Found, 360B, 2ms]
+  √  Policy non-existent returns client error 404 or 422
+
+└ POST /access/check - Invalid direction enum (422)
+  POST http://localhost:8001/access/check [422 Unprocessable Content, 459B, 1ms]
+  √  Invalid enum value returns 400 or 422
+
+└ POST /alerts - Simulated 500 Internal Server Error
+  POST http://localhost:8001/alerts [500 Internal Server Error, 347B, 2ms]
+  √  Server error returns 500
+  √  ProblemDetails status is 500
+
+□ 04_Boundary_Reliability
+└ GET /alerts - Boundary min limit=1
+  GET http://localhost:8001/alerts?limit=1 [200 OK, 562B, 2ms]
+  √  Min boundary limit=1 returns 200
+
+└ GET /alerts - Boundary max limit=100
+  GET http://localhost:8001/alerts?limit=100 [200 OK, 2.7kB, 4ms]
+  √  Max boundary limit=100 returns 200
+
+└ GET /alerts - Limit=101 out of range
+  GET http://localhost:8001/alerts?limit=101 [422 Unprocessable Content, 356B, 2ms]
+  √  Out-of-bound limit=101 returns client error 400 or 422
+
+□ 05_Consumer_side_Smoke
+└ Core calls AI Vision mock - POST /integrations/ai-vision/face-match
+  POST http://localhost:8001/integrations/ai-vision/face-match [200 OK, 347B, 6ms]
+  √  Status code is 200
+  √  AI Vision mock returns MATCHED
+
+□ 06_Local_only_NonFunctional
+└ POST /access/check - Response time under 200ms SLA
+  POST http://localhost:8001/access/check [200 OK, 370B, 2ms]
+  √  Local service responds under 200ms SLA
+
+□ 07_Plug_a_thon_LAN_Integrations
+└ GET /integrations/status - Dashboard quét toàn mạng LAN
+  GET http://localhost:8001/integrations/status [200 OK, 1.27kB, 11ms]
+  √  Status code is 200
+  √  All 5 mock partners ONLINE in local compose mode
+
+└ GET /integrations/gate/cards/{cardId} - Tra cứu thẻ bên Access Gate
+  GET http://localhost:8001/integrations/gate/cards/RFID-2026-001 [200 OK, 430B, 6ms]
+  √  Status code is 200
+  √  Partner call succeeds in local mock mode
+
+└ GET /integrations/ai-vision/models - Xem model YOLOv8 của AI Vision
+  GET http://localhost:8001/integrations/ai-vision/models [200 OK, 441B, 18ms]
+  √  Status code is 200
+  √  Partner call succeeds in local mock mode
+
+└ POST /integrations/ai-vision/face-match - So khớp khuôn mặt AI Vision
+  POST http://localhost:8001/integrations/ai-vision/face-match [200 OK, 326B, 6ms]
+  √  Status code is 200
+  √  Partner call succeeds in local mock mode
+
+└ GET /integrations/analytics/health - Kiểm tra kết nối Analytics
+  GET http://localhost:8001/integrations/analytics/health [200 OK, 301B, 17ms]
+  √  Status code is 200
+  √  Analytics health ONLINE in local mock mode
+
+└ POST /integrations/notification/send - Gửi cảnh báo sang Notification
+  POST http://localhost:8001/integrations/notification/send [200 OK, 530B, 7ms]
+  √  Status code is 200
+  √  Notification delivered in local mock mode
+
+┌─────────────────────────┬─────────────────┬─────────────────┐
+│                         │        executed │          failed │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              iterations │               1 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│                requests │              34 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│            test-scripts │              34 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│      prerequest-scripts │              35 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              assertions │              60 │               0 │
+├─────────────────────────┴─────────────────┴─────────────────┤
+│ total run duration: 3s                                      │
+├─────────────────────────────────────────────────────────────┤
+│ total data received: 14.57kB (approx)                       │
+├─────────────────────────────────────────────────────────────┤
+│ average response time: 5ms [min: 1ms, max: 31ms, s.d.: 5ms] │
+└─────────────────────────────────────────────────────────────┘
+
+=== NEWMAN STDERR ===
+(node:20140) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+[PASS] npm run test:compose (Newman CLI + XML + HTML Extra) passed with exit code 0!

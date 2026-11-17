@@ -19,6 +19,8 @@ info:
     name: Nhóm Core Business
     email: core-business@campus.local
 servers:
+  - url: http://localhost:8001
+    description: Local Core Business FastAPI / Docker Compose server
   - url: http://localhost:4010
     description: Prism mock server
   - url: https://api.campus.local
@@ -34,6 +36,8 @@ tags:
     description: Kiểm tra policy ra/vào cho Access Gate
   - name: ai-vision-webhook
     description: Nhận kết quả phát hiện từ AI Vision Service
+  - name: integrations
+    description: Kiểm tra kết nối và phối hợp liên dịch vụ (LAN & Mock)
 security:
   - bearerAuth: []
 paths:
@@ -235,7 +239,40 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /alerts/{alertId}/resolve:
+    post:
+      operationId: resolveAlertById
+      summary: Đánh dấu cảnh báo đã xử lý
+      description: Chuyển trạng thái cảnh báo sang RESOLVED và publish sự kiện MQTT business.alert.resolved.
+      tags: [alerts]
+      parameters:
+        - $ref: '#/components/parameters/AlertId'
+      responses:
+        '200':
+          description: Cảnh báo đã được giải quyết
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /events:
+    get:
+      operationId: listCampusEvents
+      summary: Lấy danh sách sự kiện đã tiếp nhận
+      description: Trả về danh sách sự kiện nghiệp vụ lưu trong hệ thống.
+      tags: [events]
+      security: []
+      responses:
+        '200':
+          description: Danh sách sự kiện
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
     post:
       operationId: createCampusEvent
       summary: Gửi sự kiện nghiệp vụ vào hệ thống
@@ -520,6 +557,86 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /decisions:
+    get:
+      operationId: listAccessDecisions
+      summary: Lấy danh sách quyết định kiểm soát ra vào
+      description: Trả về toàn bộ các quyết định ALLOW/DENY đã xử lý.
+      tags: [access-policy]
+      security: []
+      responses:
+        '200':
+          description: Danh sách quyết định truy cập
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccessDecision'
+
+  /integrations/config:
+    get:
+      operationId: getIntegrationConfig
+      summary: Lấy cấu hình tích hợp và chế độ lưu trữ hiện hành
+      description: Cung cấp URL đối tác, MQTT broker và backend lưu trữ (postgres/memory) cho Operations Dashboard.
+      tags: [integrations]
+      security: []
+      responses:
+        '200':
+          description: Cấu hình tích hợp
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /integrations/status:
+    get:
+      operationId: getIntegrationsStatus
+      summary: Quét sức khỏe đồng thời 5 service đối tác
+      description: Kiểm tra /health song song của AI Vision, IoT Ingestion, Access Gate, Analytics và Notification.
+      tags: [integrations]
+      security: []
+      responses:
+        '200':
+          description: Báo cáo trạng thái tích hợp toàn mạng
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /integrations/notification/send:
+    post:
+      operationId: dispatchPartnerNotification
+      summary: Gửi thông báo qua Notification Service
+      description: Chuyển tiếp thông báo khẩn cấp tới endpoint POST /notifications/send của dịch vụ Notification.
+      tags: [integrations]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject, message]
+              properties:
+                recipient:
+                  type: string
+                channel:
+                  type: string
+                subject:
+                  type: string
+                message:
+                  type: string
+                severity:
+                  type: string
+      responses:
+        '200':
+          description: Kết quả chuyển tiếp thông báo
+          content:
+            application/json:
+              schema:
+                type: object
+
 webhooks:
   alertCreated:
     post:
@@ -581,7 +698,7 @@ components:
       properties:
         status:
           type: string
-          enum: [ok]
+          enum: [ok, degraded]
           description: Trạng thái service.
           example: ok
         service:
@@ -589,7 +706,16 @@ components:
           minLength: 2
           maxLength: 80
           description: Tên service.
-          example: lab02-contract-template
+          example: core-business
+        version:
+          type: string
+          description: Phiên bản service.
+          example: 0.5.0
+        storage:
+          type: string
+          enum: [postgres, memory]
+          description: Kiểu lưu trữ đang kích hoạt.
+          example: postgres
         time:
           type: string
           format: date-time
@@ -703,6 +829,11 @@ components:
           type: boolean
           description: Còn dữ liệu ở trang sau hay không.
           example: false
+        total:
+          type: integer
+          minimum: 0
+          description: Tổng số cảnh báo trong hệ thống.
+          example: 1
 
     CampusEvent:
       oneOf:
@@ -712,7 +843,8 @@ components:
       discriminator:
         propertyName: eventType
         mapping:
-          SENSOR_READING: '#/components/schemas/SensorEvent'
+          sensor.reading.created: '#/components/schemas/SensorEvent'
+          sensor.threshold.exceeded: '#/components/schemas/SensorEvent'
           ACCESS_CHECK: '#/components/schemas/AccessEvent'
           AI_VISION_DETECTION: '#/components/schemas/AIVisionEvent'
 
@@ -923,6 +1055,11 @@ components:
           type: string
           description: Mã cổng.
           example: GATE-01
+        direction:
+          type: string
+          enum: [IN, OUT]
+          description: Chiều di chuyển.
+          example: IN
         result:
           type: string
           enum: [ALLOW, DENY]
@@ -996,6 +1133,14 @@ components:
             type: string
           description: Danh sách cổng áp dụng policy.
           example: [GATE-01, GATE-02]
+        conditions:
+          type: object
+          description: Điều kiện bổ sung áp dụng cho policy.
+          additionalProperties: true
+        active:
+          type: boolean
+          description: Cờ bật/tắt policy.
+          example: true
 
     AIVisionDetectionResult:
       type: object

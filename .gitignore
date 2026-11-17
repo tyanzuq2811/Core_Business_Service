@@ -1,0 +1,52 @@
+# ================================================================
+# Core Business Service — Root Git Ignore Configuration
+# ================================================================
+
+# LaTeX Report Directory (Excluded per user request)
+Template_BCTT_DATN-main/
+*.pdf
+
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+.npm/
+
+# Environment files & Secrets
+.env
+.env.*
+*.env.local
+!*.env.example
+
+# Docker Volumes & Persistent Data
+db-data/
+postgres-data/
+*.log
+docker-compose.override.yml
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.bak
+.DS_Store
+Thumbs.db
+desktop.ini

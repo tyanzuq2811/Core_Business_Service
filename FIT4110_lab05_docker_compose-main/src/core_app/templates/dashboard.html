@@ -1,239 +1,378 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Campus — Core Business Live Partner Command Center</title>
+  <title>Smart Campus — Core Business Operations Center</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg-base: #0a0e1a;
-      --bg-surface: #111827;
-      --bg-card: rgba(17, 24, 39, 0.8);
-      --bg-card-hover: rgba(31, 41, 55, 0.9);
-      --border-color: rgba(255, 255, 255, 0.08);
+    /* ================================================================
+       DESIGN SYSTEM: THEMES (DARK / LIGHT) & CSS VARIABLES
+       ================================================================ */
+    :root, [data-theme="dark"] {
+      --bg-base: #090d16;
+      --bg-header: rgba(13, 19, 33, 0.88);
+      --bg-surface: #0f172a;
+      --bg-card: rgba(17, 24, 39, 0.75);
+      --bg-card-hover: rgba(30, 41, 59, 0.85);
+      --bg-panel: #111827;
+      --bg-console: #070b14;
+      --bg-badge: rgba(255, 255, 255, 0.05);
+      --bg-input: rgba(15, 23, 42, 0.75);
+      
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --border-focus: rgba(99, 102, 241, 0.6);
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
       
       --primary: #6366f1;
       --primary-hover: #4f46e5;
+      --primary-light: rgba(99, 102, 241, 0.15);
       --primary-glow: rgba(99, 102, 241, 0.35);
       
-      /* Domain colors */
+      /* Domain Accents */
       --gate-color: #10b981;
+      --gate-bg: rgba(16, 185, 129, 0.12);
       --gate-glow: rgba(16, 185, 129, 0.25);
+      
       --ai-color: #a855f7;
+      --ai-bg: rgba(168, 85, 247, 0.12);
       --ai-glow: rgba(168, 85, 247, 0.25);
+      
       --iot-color: #06b6d4;
+      --iot-bg: rgba(6, 182, 212, 0.12);
       --iot-glow: rgba(6, 182, 212, 0.25);
+      
       --analytics-color: #f59e0b;
+      --analytics-bg: rgba(245, 158, 11, 0.12);
       --analytics-glow: rgba(245, 158, 11, 0.25);
+      
       --noti-color: #f43f5e;
+      --noti-bg: rgba(244, 63, 94, 0.12);
       --noti-glow: rgba(244, 63, 94, 0.25);
       
       --success: #10b981;
       --danger: #ef4444;
       --warning: #f59e0b;
+      --info: #0284c7;
       
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
-      --text-dim: #6b7280;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 4px 16px -2px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 30px -4px rgba(0, 0, 0, 0.6);
       
-      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-      --font-mono: 'JetBrains Mono', monospace;
+      --table-stripe: rgba(255, 255, 255, 0.015);
+      --table-hover: rgba(99, 102, 241, 0.08);
+      
+      --radial-mesh: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.14) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.10) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(6, 182, 212, 0.06) 0px, transparent 50%);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [data-theme="light"] {
+      --bg-base: #f8fafc;
+      --bg-header: rgba(255, 255, 255, 0.92);
+      --bg-surface: #ffffff;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f1f5f9;
+      --bg-panel: #ffffff;
+      --bg-console: #0f172a;
+      --bg-badge: rgba(0, 0, 0, 0.04);
+      --bg-input: #ffffff;
+      
+      --border-subtle: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --border-focus: rgba(79, 70, 229, 0.6);
+      
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #94a3b8;
+      
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: rgba(79, 70, 229, 0.1);
+      --primary-glow: rgba(79, 70, 229, 0.2);
+      
+      /* Domain Accents */
+      --gate-color: #059669;
+      --gate-bg: rgba(5, 150, 105, 0.08);
+      --gate-glow: rgba(5, 150, 105, 0.15);
+      
+      --ai-color: #9333ea;
+      --ai-bg: rgba(147, 51, 234, 0.08);
+      --ai-glow: rgba(147, 51, 234, 0.15);
+      
+      --iot-color: #0891b2;
+      --iot-bg: rgba(8, 145, 178, 0.08);
+      --iot-glow: rgba(8, 145, 178, 0.15);
+      
+      --analytics-color: #d97706;
+      --analytics-bg: rgba(217, 119, 6, 0.08);
+      --analytics-glow: rgba(217, 119, 6, 0.15);
+      
+      --noti-color: #e11d48;
+      --noti-bg: rgba(225, 29, 72, 0.08);
+      --noti-glow: rgba(225, 29, 72, 0.15);
+      
+      --success: #059669;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --info: #0284c7;
+      
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 14px -1px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.09);
+      
+      --table-stripe: #f8fafc;
+      --table-hover: #f1f5f9;
+      
+      --radial-mesh: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.06) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.05) 0px, transparent 50%);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.25s ease, border-color 0.25s ease, color 0.15s ease; }
     
     body {
-      font-family: var(--font-sans);
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
       background-color: var(--bg-base);
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      background-image: 
-        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%),
-        radial-gradient(at 50% 50%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+      background-image: var(--radial-mesh);
       background-attachment: fixed;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* HEADER */
+    /* SVG Icon utility */
+    .icon {
+      width: 18px;
+      height: 18px;
+      display: inline-block;
+      vertical-align: middle;
+      stroke-width: 2;
+      stroke: currentColor;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    .icon-sm { width: 15px; height: 15px; }
+    .icon-lg { width: 22px; height: 22px; }
+
+    /* ================================================================
+       HEADER & NAVIGATION BAR
+       ================================================================ */
     header {
-      background: rgba(17, 24, 39, 0.9);
+      background: var(--bg-header);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border-color);
-      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.85rem 1.8rem;
       position: sticky;
       top: 0;
       z-index: 100;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5);
+      box-shadow: var(--shadow-sm);
     }
 
     .brand-section {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.9rem;
     }
 
     .logo-badge {
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       border-radius: 12px;
       background: linear-gradient(135deg, var(--primary), var(--ai-color));
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
+      color: #fff;
       box-shadow: 0 0 20px var(--primary-glow);
     }
 
     .brand-title {
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       font-weight: 700;
-      background: linear-gradient(to right, #fff, #93c5fd, #c084fc);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
       letter-spacing: -0.02em;
-    }
-
-    .brand-sub {
-      font-size: 0.75rem;
-      color: var(--text-muted);
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      margin-top: 2px;
+    }
+    [data-theme="dark"] .brand-title {
+      background: linear-gradient(to right, #ffffff, #93c5fd, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    [data-theme="light"] .brand-title {
+      color: #0f172a;
+    }
+
+    .brand-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-top: 1px;
     }
 
     .header-controls {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.65rem;
     }
 
     .status-pill {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 0.85rem;
+      gap: 0.45rem;
+      background: var(--bg-badge);
+      border: 1px solid var(--border-subtle);
+      padding: 0.35rem 0.75rem;
       border-radius: 9999px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 600;
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.3);
       color: var(--success);
     }
 
     .pulse-dot {
       width: 8px;
       height: 8px;
-      border-radius: 50%;
       background-color: var(--success);
-      box-shadow: 0 0 10px var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--success);
       animation: pulse 2s infinite;
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(1.2); }
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
     }
 
-    /* BUTTONS */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      font-size: 0.85rem;
-      font-weight: 600;
-      font-family: inherit;
-      border-radius: 8px;
-      border: 1px solid transparent;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      color: white;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-      box-shadow: 0 2px 10px var(--primary-glow);
-    }
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 15px var(--primary-glow);
-    }
-
-    .btn-outline {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border-color);
+    /* THEME SWITCH BUTTON */
+    .btn-theme-toggle {
+      background: var(--bg-badge);
+      border: 1px solid var(--border-subtle);
       color: var(--text-main);
+      padding: 0.4rem 0.65rem;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
     }
-    .btn-outline:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.2);
+    .btn-theme-toggle:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
     }
 
-    .btn-sm {
-      padding: 0.35rem 0.75rem;
-      font-size: 0.75rem;
-      border-radius: 6px;
+    /* ================================================================
+       METRICS OVERVIEW STRIP
+       ================================================================ */
+    .metrics-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 0.9rem 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .metric-icon-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .metric-val {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .metric-lbl {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      font-weight: 500;
     }
 
-    /* CONTAINER & TABS */
+    /* ================================================================
+       TABS NAVIGATION
+       ================================================================ */
     .container {
       max-width: 1440px;
-      margin: 0 auto;
-      padding: 1.5rem;
       width: 100%;
+      margin: 0 auto;
+      padding: 1.25rem 1.8rem 3rem 1.8rem;
       flex: 1;
     }
 
     .tabs-nav {
       display: flex;
       gap: 0.5rem;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-subtle);
       margin-bottom: 1.5rem;
       overflow-x: auto;
-      padding-bottom: 0.25rem;
+      scrollbar-width: none;
     }
+    .tabs-nav::-webkit-scrollbar { display: none; }
 
     .tab-btn {
-      padding: 0.75rem 1.25rem;
-      background: transparent;
+      padding: 0.75rem 1.1rem;
+      background: none;
       border: none;
       border-bottom: 2px solid transparent;
       color: var(--text-muted);
-      font-family: inherit;
-      font-size: 0.9rem;
       font-weight: 600;
+      font-size: 0.86rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      transition: all 0.2s ease;
-      white-space: nowrap;
       border-radius: 8px 8px 0 0;
+      white-space: nowrap;
+      transition: all 0.2s ease;
     }
     .tab-btn:hover {
       color: var(--text-main);
-      background: rgba(255, 255, 255, 0.03);
+      background: var(--bg-card-hover);
     }
     .tab-btn.active {
-      color: #fff;
-      border-bottom-color: var(--primary);
-      background: linear-gradient(to top, rgba(99, 102, 241, 0.15), transparent);
+      color: var(--text-main);
     }
-    .tab-btn.tab-gate.active { border-bottom-color: var(--gate-color); background: linear-gradient(to top, var(--gate-glow), transparent); }
-    .tab-btn.tab-ai.active { border-bottom-color: var(--ai-color); background: linear-gradient(to top, var(--ai-glow), transparent); }
-    .tab-btn.tab-iot.active { border-bottom-color: var(--iot-color); background: linear-gradient(to top, var(--iot-glow), transparent); }
-    .tab-btn.tab-analytics.active { border-bottom-color: var(--analytics-color); background: linear-gradient(to top, var(--analytics-glow), transparent); }
-    .tab-btn.tab-noti.active { border-bottom-color: var(--noti-color); background: linear-gradient(to top, var(--noti-glow), transparent); }
+    .tab-btn.tab-gate.active { border-bottom-color: var(--gate-color); color: var(--gate-color); background: var(--gate-bg); }
+    .tab-btn.tab-ai.active { border-bottom-color: var(--ai-color); color: var(--ai-color); background: var(--ai-bg); }
+    .tab-btn.tab-iot.active { border-bottom-color: var(--iot-color); color: var(--iot-color); background: var(--iot-bg); }
+    .tab-btn.tab-analytics.active { border-bottom-color: var(--analytics-color); color: var(--analytics-color); background: var(--analytics-bg); }
+    .tab-btn.tab-noti.active { border-bottom-color: var(--noti-color); color: var(--noti-color); background: var(--noti-bg); }
+    .tab-btn.tab-radar.active { border-bottom-color: var(--primary); color: var(--primary); background: var(--primary-light); }
 
     .tab-pane {
       display: none;
@@ -242,144 +381,152 @@
     .tab-pane.active {
       display: block;
     }
-
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* PARTNER HERO BANNER */
+    /* ================================================================
+       PARTNER BANNERS & ACCENT CARDS
+       ================================================================ */
     .partner-banner {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
       border-radius: 12px;
-      padding: 1.25rem 1.5rem;
+      padding: 1.1rem 1.4rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.5rem;
-      position: relative;
-      overflow: hidden;
+      margin-bottom: 1.25rem;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-sm);
     }
-    .partner-banner::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 6px;
-      height: 100%;
-    }
-    .partner-banner.banner-gate::before { background: var(--gate-color); box-shadow: 0 0 15px var(--gate-color); }
-    .partner-banner.banner-ai::before { background: var(--ai-color); box-shadow: 0 0 15px var(--ai-color); }
-    .partner-banner.banner-iot::before { background: var(--iot-color); box-shadow: 0 0 15px var(--iot-color); }
-    .partner-banner.banner-analytics::before { background: var(--analytics-color); box-shadow: 0 0 15px var(--analytics-color); }
-    .partner-banner.banner-noti::before { background: var(--noti-color); box-shadow: 0 0 15px var(--noti-color); }
+    .banner-gate { background: var(--gate-bg); border-left: 4px solid var(--gate-color); }
+    .banner-ai { background: var(--ai-bg); border-left: 4px solid var(--ai-color); }
+    .banner-iot { background: var(--iot-bg); border-left: 4px solid var(--iot-color); }
+    .banner-analytics { background: var(--analytics-bg); border-left: 4px solid var(--analytics-color); }
+    .banner-noti { background: var(--noti-bg); border-left: 4px solid var(--noti-color); }
 
     .banner-title {
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       font-weight: 700;
-      color: #fff;
+      letter-spacing: -0.01em;
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
     .banner-meta {
+      display: flex;
+      gap: 1.25rem;
       font-size: 0.8rem;
       color: var(--text-muted);
-      margin-top: 4px;
-      display: flex;
-      gap: 1rem;
-      align-items: center;
+      margin-top: 0.35rem;
+      flex-wrap: wrap;
     }
 
-    /* PANELS */
+    /* ================================================================
+       PANELS, TABLES & DATA LISTS
+       ================================================================ */
     .panel {
-      background: var(--bg-card);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border-color);
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
       border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
     }
 
     .panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.25rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+      gap: 1rem;
     }
 
     .panel-title {
-      font-size: 1.05rem;
-      font-weight: 600;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
 
-    /* TABLES */
     .table-container {
+      width: 100%;
       overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.85rem;
+      text-align: left;
+      font-size: 0.84rem;
     }
 
     th {
-      text-align: left;
-      padding: 0.75rem 1rem;
+      background: var(--bg-surface);
       color: var(--text-muted);
+      padding: 0.75rem 0.95rem;
       font-weight: 600;
-      border-bottom: 1px solid var(--border-color);
-      background: rgba(0, 0, 0, 0.25);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap;
     }
 
     td {
-      padding: 0.85rem 1rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      color: var(--text-main);
+      padding: 0.75rem 0.95rem;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: middle;
     }
 
-    tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
-    }
+    tbody tr:nth-child(even) { background-color: var(--table-stripe); }
+    tbody tr:hover { background-color: var(--table-hover); }
 
+    /* ================================================================
+       BADGES & STATUS PILLS
+       ================================================================ */
     .badge-status {
-      padding: 0.25rem 0.65rem;
+      padding: 0.28rem 0.65rem;
       border-radius: 9999px;
-      font-size: 0.7rem;
+      font-size: 0.74rem;
       font-weight: 700;
-      letter-spacing: 0.05em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
     }
-    .badge-online { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.4); }
-    .badge-offline { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.4); }
-
-    .severity-badge {
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.7rem;
-      font-weight: 700;
-    }
-    .sev-HIGH { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .sev-CRITICAL { background: rgba(220, 38, 38, 0.3); color: #fca5a5; border: 1px solid rgba(220, 38, 38, 0.6); }
-    .sev-MEDIUM { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .sev-LOW { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-online { background: rgba(16, 185, 129, 0.16); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-offline { background: rgba(239, 68, 68, 0.16); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
 
     .result-badge {
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
+      display: inline-block;
+      padding: 0.22rem 0.55rem;
+      border-radius: 6px;
       font-weight: 700;
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', monospace;
     }
-    .res-ALLOW { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .res-DENY { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .res-ALLOW { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+    .res-DENY { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
 
-    /* ACTION FORMS */
+    .severity-badge {
+      padding: 0.22rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      display: inline-block;
+    }
+    .sev-CRITICAL { background: rgba(239, 68, 68, 0.25); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); }
+    .sev-HIGH { background: rgba(245, 158, 11, 0.25); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .sev-MEDIUM { background: rgba(2, 132, 199, 0.25); color: #38bdf8; border: 1px solid rgba(2, 132, 199, 0.35); }
+    .sev-LOW { background: rgba(100, 116, 139, 0.25); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.35); }
+
+    /* ================================================================
+       ACTION BOXES, FORMS & BUTTONS
+       ================================================================ */
     .form-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -387,13 +534,17 @@
     }
 
     .action-box {
-      background: rgba(31, 41, 55, 0.4);
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
       padding: 1.25rem;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .action-box:hover {
+      border-color: var(--border-strong);
     }
 
     .form-group {
@@ -402,198 +553,338 @@
       gap: 0.35rem;
     }
 
-    .form-group label {
-      font-size: 0.75rem;
+    label {
+      font-size: 0.78rem;
       font-weight: 600;
       color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
     }
 
     .form-control {
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      padding: 0.6rem 0.85rem;
-      color: white;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.55rem 0.8rem;
+      color: var(--text-main);
+      font-size: 0.84rem;
       font-family: inherit;
-      font-size: 0.85rem;
-      outline: none;
-      transition: border-color 0.2s ease;
+      width: 100%;
     }
     .form-control:focus {
+      outline: none;
       border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
     }
 
-    .code-console {
-      background: #050811;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+    .btn {
+      padding: 0.55rem 1rem;
       border-radius: 8px;
-      padding: 0.75rem;
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-sm { padding: 0.35rem 0.7rem; font-size: 0.76rem; border-radius: 6px; }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .btn-outline {
+      background: var(--bg-badge);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+    }
+    .btn-outline:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-strong);
+    }
+
+    /* CODE & TERMINAL CONSOLE */
+    .code-console {
+      background: var(--bg-console);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.76rem;
       color: #38bdf8;
-      max-height: 220px;
+      max-height: 180px;
       overflow-y: auto;
       white-space: pre-wrap;
+      word-break: break-all;
     }
 
-    /* RADAR GRID */
+    /* ================================================================
+       RADAR GRID CARDS
+       ================================================================ */
     .radar-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.1rem;
     }
 
     .partner-card {
-      background: rgba(31, 41, 55, 0.5);
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      padding: 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.15rem;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      gap: 1rem;
-      transition: all 0.2s ease;
+      gap: 0.75rem;
       position: relative;
       overflow: hidden;
     }
-    .partner-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 4px;
-      height: 100%;
-      background: var(--text-dim);
-    }
-    .partner-card.online::before {
-      background: var(--success);
-      box-shadow: 0 0 10px var(--success);
-    }
-    .partner-card.offline::before {
-      background: var(--danger);
-    }
-
-    /* FOOTER */
-    footer {
-      border-top: 1px solid var(--border-color);
-      padding: 1.25rem 2rem;
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--text-dim);
-      background: rgba(17, 24, 39, 0.4);
-    }
+    .partner-card.online { border-top: 3px solid var(--success); }
+    .partner-card.offline { border-top: 3px solid var(--danger); }
 
     /* TOAST */
     #toast {
-      position: fixed;
-      bottom: 2rem;
-      right: 2rem;
-      background: rgba(17, 24, 39, 0.95);
-      border: 1px solid var(--border-color);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      border-radius: 8px;
+      visibility: hidden;
+      min-width: 280px;
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
       padding: 0.85rem 1.25rem;
+      position: fixed;
+      z-index: 200;
+      right: 25px;
+      bottom: 25px;
+      font-size: 0.84rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(20px);
+      transition: all 0.25s ease;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      font-size: 0.85rem;
-      z-index: 1000;
-      transform: translateY(100px);
-      opacity: 0;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      gap: 0.6rem;
     }
-    #toast.show { transform: translateY(0); opacity: 1; }
-    #toast.success { border-color: var(--success); color: #34d399; }
-    #toast.error { border-color: var(--danger); color: #f87171; }
+    #toast.show {
+      visibility: visible;
+      transform: translateY(0);
+    }
+    #toast.success { border-left: 4px solid var(--success); }
+    #toast.error { border-left: 4px solid var(--danger); }
+
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 1.25rem 2rem;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      background: var(--bg-header);
+    }
   </style>
 </head>
 <body>
 
-  <!-- HEADER -->
+  <!-- ================================================================
+       HEADER: BRAND, STATS & THEME TOGGLE
+       ================================================================ -->
   <header>
     <div class="brand-section">
-      <div class="logo-badge">⚡</div>
+      <div class="logo-badge">
+        <svg class="icon icon-lg" viewBox="0 0 24 24">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+      </div>
       <div>
-        <div class="brand-title">Smart Campus — Core Business Operations Center</div>
+        <div class="brand-title">
+          <span>Smart Campus</span>
+          <span style="font-weight: 400; color: var(--text-muted); font-size: 0.95rem;">|</span>
+          <span style="font-size: 1.05rem;">Core Business Operations Center</span>
+        </div>
         <div class="brand-sub">
           <span>FIT4110 • Plug-a-thon LAN Center</span>
           <span>•</span>
-          <span style="color: #c084fc; font-weight: 600;">Nhóm 6 (Core Business)</span>
+          <span id="coreHostText" style="color: var(--primary); font-weight: 600;">Host: loading...</span>
           <span>•</span>
-          <span style="color: var(--accent-cyan);">IP: 192.168.1.61:8001</span>
+          <span id="storageBadge" style="color: var(--gate-color); font-weight: 600;">DB: loading...</span>
         </div>
       </div>
     </div>
 
     <div class="header-controls">
+      <!-- Status Pill -->
       <div class="status-pill">
         <span class="pulse-dot"></span>
-        <span id="coreStatusText">CORE ONLINE (v0.5.0)</span>
+        <span id="coreStatusText">CORE ONLINE</span>
       </div>
-      <button class="btn btn-outline btn-sm" onclick="clearBufferData()" style="border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;" title="Xóa sạch dữ liệu mẫu để bắt đầu nhận luồng dữ liệu thật">
-        🧹 Làm Sạch Bảng Dữ Liệu
+
+      <!-- Auth Token Quick Config -->
+      <div style="position: relative; display: flex; align-items: center;">
+        <input
+          id="apiTokenInput"
+          type="password"
+          placeholder="Bearer Token (.env)"
+          class="form-control"
+          style="width: 170px; padding: 0.35rem 0.6rem; font-size: 0.78rem; height: 32px;"
+          title="Nhập AUTH_TOKEN trong .env khi gọi POST /alerts từ UI"
+        />
+      </div>
+
+      <!-- Action: Clear Data -->
+      <button class="btn btn-outline btn-sm" onclick="clearBufferData()" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.35);" title="Làm sạch dữ liệu để bắt đầu nhận luồng mới">
+        <svg class="icon icon-sm" viewBox="0 0 24 24">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        Làm Sạch Dữ Liệu
       </button>
+
+      <!-- Action: Ping Radar -->
       <button class="btn btn-primary btn-sm" onclick="fetchAllData(true)">
-        🔄 Quét Mạng (Ping)
+        <svg class="icon icon-sm" id="refreshIcon" viewBox="0 0 24 24">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Quét Mạng
+      </button>
+
+      <!-- Dark / Light Mode Switcher -->
+      <button class="btn-theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Chuyển chế độ Sáng / Tối">
+        <svg class="icon icon-sm" id="themeIcon" viewBox="0 0 24 24">
+          <!-- Moon icon for dark theme -->
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+        <span id="themeText">Dark</span>
       </button>
     </div>
   </header>
 
-  <!-- MAIN CONTAINER -->
+  <!-- ================================================================
+       MAIN CONTAINER & KPI STRIP
+       ================================================================ -->
   <div class="container">
+
+    <!-- KPI Quick Metrics -->
+    <div class="metrics-strip">
+      <div class="metric-card">
+        <div class="metric-icon-box" style="background: var(--primary-light); color: var(--primary);">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        </div>
+        <div>
+          <div class="metric-val" id="metricDecisions">--</div>
+          <div class="metric-lbl">Lượt Đánh Giá Access Gate</div>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon-box" style="background: var(--ai-bg); color: var(--ai-color);">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+        </div>
+        <div>
+          <div class="metric-val" id="metricAlerts">--</div>
+          <div class="metric-lbl">Cảnh Báo An Ninh (Alerts)</div>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon-box" style="background: var(--iot-bg); color: var(--iot-color);">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+        </div>
+        <div>
+          <div class="metric-val" id="metricEvents">--</div>
+          <div class="metric-lbl">Bản Tin Sự Kiện Cảm Biến</div>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon-box" style="background: var(--gate-bg); color: var(--gate-color);">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+        </div>
+        <div>
+          <div class="metric-val" id="metricPartners">5/5 ONLINE</div>
+          <div class="metric-lbl">Đối Tác Kết Nối LAN</div>
+        </div>
+      </div>
+    </div>
     
-    <!-- TABS NAVIGATION THEO TỪNG NHÓM -->
+    <!-- TABS NAVIGATION -->
     <div class="tabs-nav">
-      <button class="tab-btn tab-gate active" onclick="switchTab('tab-gate')">🚪 1. Access Gate (Nhóm 3)</button>
-      <button class="tab-btn tab-ai" onclick="switchTab('tab-ai')">👁️ 2. AI Vision (Nhóm 4)</button>
-      <button class="tab-btn tab-iot" onclick="switchTab('tab-iot')">🌡️ 3. IoT Ingestion (Nhóm 1)</button>
-      <button class="tab-btn tab-analytics" onclick="switchTab('tab-analytics')">📊 4. Analytics (Nhóm 5)</button>
-      <button class="tab-btn tab-noti" onclick="switchTab('tab-noti')">🔔 5. Notification (Nhóm 6)</button>
-      <button class="tab-btn" onclick="switchTab('tab-radar')">🌐 6. Radar Toàn Mạng & Hợp Đồng</button>
+      <button class="tab-btn tab-gate active" onclick="switchTab('tab-gate', event)">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        1. Access Gate
+      </button>
+      <button class="tab-btn tab-ai" onclick="switchTab('tab-ai', event)">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        2. AI Vision
+      </button>
+      <button class="tab-btn tab-iot" onclick="switchTab('tab-iot', event)">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg>
+        3. IoT Ingestion
+      </button>
+      <button class="tab-btn tab-analytics" onclick="switchTab('tab-analytics', event)">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        4. Analytics & MQTT
+      </button>
+      <button class="tab-btn tab-noti" onclick="switchTab('tab-noti', event)">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        5. Notification
+      </button>
+      <button class="tab-btn tab-radar" onclick="switchTab('tab-radar', event)">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M16.2 7.8a6 6 0 0 1 0 8.4"></path><path d="M19.1 4.9a10 10 0 0 1 0 14.2"></path></svg>
+        6. Radar Mạng & Hợp Đồng
+      </button>
     </div>
 
     <!-- ========================================================== -->
-    <!-- TAB 1: ACCESS GATE (NHÓM 3) -->
+    <!-- TAB 1: ACCESS GATE -->
     <!-- ========================================================== -->
     <div id="tab-gate" class="tab-pane active">
       <!-- Banner Status -->
       <div class="partner-banner banner-gate">
         <div>
-          <div class="banner-title">🚪 Phân Hệ Access Gate — Kiểm Soát Cổng Barrier (Nhóm 3)</div>
+          <div class="banner-title">
+            <svg class="icon" style="color: var(--gate-color);" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            Phân Hệ Access Gate — Kiểm Soát Cổng Barrier
+          </div>
           <div class="banner-meta">
-            <span>Địa chỉ IP: <strong style="color: var(--accent-cyan);" id="gateUrlText">http://192.168.1.31:8000</strong></span>
-            <span>Auth Token: <code style="color: #fff;">Bearer dev-secret-token</code></span>
-            <span>UID mẫu: <code style="color: #67e8f9;">04:A1:B2:C3:D4:0X</code></span>
+            <span>Endpoint: <strong style="color: var(--gate-color);" id="gateUrlText">(theo .env)</strong></span>
+            <span>Auth Token: <code>Bearer &lt;GATE_AUTH_TOKEN&gt;</code></span>
+            <span>UID Thẻ: <code>04:A1:B2:C3:D4:0X</code></span>
           </div>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
-          <span class="badge-status" id="gateBadgeStatus">🟢 ONLINE</span>
+          <span class="badge-status badge-online" id="gateBadgeStatus">ONLINE</span>
           <button class="btn btn-outline btn-sm" onclick="pingSinglePartner('access-gate')">Ping</button>
         </div>
       </div>
 
-      <!-- Live RFID Logs from Gate (GET /access/logs/recent) -->
+      <!-- Live RFID Logs from Gate -->
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title">📡 Luồng Dữ Liệu Thẻ RFID Quẹt Thật Từ Gate (GET /access/logs/recent?limit=5)</div>
-          <button class="btn btn-primary btn-sm" onclick="fetchGateRecentLogs()">🔄 Kéo Logs RFID Mới Nhất</button>
+          <div class="panel-title">
+            <svg class="icon" style="color: var(--gate-color);" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            Luồng Dữ Liệu Thẻ RFID Quẹt Thật Từ Gate (GET /access/logs/recent)
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="fetchGateRecentLogs()">Kéo Logs Mới Nhất</button>
         </div>
         <div class="table-container">
           <table>
             <thead>
               <tr>
                 <th>Mã Log ID</th>
-                <th>UID Thẻ Sinh Viên (RFID Thật)</th>
-                <th>Cổng (Gate ID)</th>
+                <th>UID Thẻ Sinh Viên (RFID)</th>
+                <th>Cổng (Gate)</th>
                 <th>Hướng Đi</th>
                 <th>Trạng Thái Quyền</th>
-                <th>Thời Gian Quẹt Thẻ</th>
+                <th>Thời Gian Quẹt</th>
               </tr>
             </thead>
             <tbody id="gateRealtimeLogsTableBody">
-              <tr><td colspan="6" style="text-align: center; color: var(--text-dim);">Đang kết nối... bấm 'Kéo Logs RFID Mới Nhất' để lấy luồng dữ liệu quẹt thẻ thật từ Gate</td></tr>
+              <tr><td colspan="6" style="text-align: center; color: var(--text-dim);">Đang kết nối... bấm 'Kéo Logs Mới Nhất' để lấy dữ liệu từ Gate</td></tr>
             </tbody>
           </table>
         </div>
@@ -602,8 +893,11 @@
       <!-- Inbound Decisions Table (POST /access/check) -->
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title">📥 Quyết Định Đóng/Mở Cổng Core Tính Toán Cho Gate (POST /access/check)</div>
-          <button class="btn btn-outline btn-sm" onclick="fetchDecisions()">Làm mới</button>
+          <div class="panel-title">
+            <svg class="icon" style="color: var(--primary);" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            Quyết Định Đóng/Mở Cổng Core Tính Toán Cho Gate (POST /access/check)
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="fetchDecisions()">Làm Mới</button>
         </div>
         <div class="table-container">
           <table>
@@ -611,12 +905,12 @@
               <tr>
                 <th>Decision ID</th>
                 <th>Mã Thẻ (Card ID)</th>
-                <th>Cổng (Gate)</th>
+                <th>Cổng</th>
                 <th>Hướng Đi</th>
                 <th>Quyết Định</th>
                 <th>Mã Lý Do</th>
-                <th>Chính Sách Áp Dụng</th>
-                <th>Thời Gian Đánh Giá</th>
+                <th>Chính Sách</th>
+                <th>Thời Gian</th>
               </tr>
             </thead>
             <tbody id="gateDecisionsTableBody">
@@ -628,13 +922,13 @@
 
       <!-- Outbound & Simulator Box -->
       <div class="form-grid">
-        <!-- Tra cứu thẻ bên Gate -->
         <div class="action-box">
-          <div style="font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-            <span>🔍</span> Tra Cứu Thông Tin Thẻ Tại Access Gate (GET /cards/{cardId})
+          <div style="font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+            <svg class="icon" style="color: var(--gate-color);" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            Tra Cứu Thông Tin Thẻ Tại Access Gate (GET /cards/{cardId})
           </div>
           <div style="font-size: 0.8rem; color: var(--text-muted);">
-            Core gọi: <code style="color: var(--accent-cyan);">GET http://192.168.1.31:8000/cards/{cardId}</code>
+            Core gọi: <code id="gateCardCodeUrl" style="color: var(--gate-color);">GET &lt;GATE_SERVICE_URL&gt;/cards/{cardId}</code>
           </div>
           <div class="form-group">
             <label>Mã Thẻ Sinh Viên / UID:</label>
@@ -644,13 +938,13 @@
           <div class="code-console" id="outboundGateResult">// Kết quả tra cứu từ Access Gate...</div>
         </div>
 
-        <!-- Kiểm tra Barrier Status -->
         <div class="action-box">
-          <div style="font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-            <span>🚧</span> Trạng Thái Cổng Barrier (GET /gates/{gateId}/status)
+          <div style="font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+            <svg class="icon" style="color: var(--analytics-color);" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
+            Trạng Thái Cổng Barrier (GET /gates/{gateId}/status)
           </div>
           <div style="font-size: 0.8rem; color: var(--text-muted);">
-            Core gọi: <code style="color: var(--accent-cyan);">GET http://192.168.1.31:8000/gates/{gateId}/status</code>
+            Core gọi: <code id="gateStatusCodeUrl" style="color: var(--analytics-color);">GET &lt;GATE_SERVICE_URL&gt;/gates/{gateId}/status</code>
           </div>
           <div class="form-group">
             <label>Mã Cổng (Gate ID):</label>
@@ -660,43 +954,48 @@
           <div class="code-console" id="outboundGateStatusResult">// Trạng thái Barrier từ Access Gate...</div>
         </div>
 
-        <!-- Giả lập Gate bắn sang Core -->
         <div class="action-box">
-          <div style="font-weight: 700; color: #34d399; display: flex; align-items: center; gap: 0.5rem;">
-            <span>🎮</span> Giả Lập: Access Gate Bắn Lượt Quẹt Thẻ Sang Core
+          <div style="font-weight: 700; color: var(--gate-color); display: flex; align-items: center; gap: 0.5rem;">
+            <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Giả Lập: Access Gate Bắn Lượt Quẹt Thẻ Sang Core
           </div>
           <p style="font-size: 0.8rem; color: var(--text-muted);">
-            Mô phỏng trường hợp sinh viên quẹt thẻ <code style="color:#fff;">RFID-2026-001</code> tại Cổng 1 (IN).
+            Mô phỏng trường hợp sinh viên quẹt thẻ <code>RFID-2026-001</code> tại Cổng 1 (IN).
           </p>
-          <button class="btn btn-primary" style="background: #10b981;" onclick="simulateAccessCheck()">Bắn Yêu Cầu Quẹt Thẻ Sang Core</button>
+          <button class="btn btn-primary" style="background: var(--gate-color);" onclick="simulateAccessCheck()">Bắn Yêu Cầu Quẹt Thẻ Sang Core</button>
         </div>
       </div>
     </div>
 
     <!-- ========================================================== -->
-    <!-- TAB 2: AI VISION (NHÓM 4) -->
+    <!-- TAB 2: AI VISION -->
     <!-- ========================================================== -->
     <div id="tab-ai" class="tab-pane">
-      <!-- Banner Status -->
       <div class="partner-banner banner-ai">
         <div>
-          <div class="banner-title">👁️ Phân Hệ AI Vision — Thị Giác Máy Tính & Nhận Diện (Nhóm 4)</div>
+          <div class="banner-title">
+            <svg class="icon" style="color: var(--ai-color);" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            Phân Hệ AI Vision — Thị Giác Máy Tính & Nhận Diện
+          </div>
           <div class="banner-meta">
-            <span>Địa chỉ IP: <strong style="color: var(--accent-cyan);" id="aiUrlText">http://192.168.1.41:8000</strong></span>
-            <span>Auth Token: <code style="color: #fff;">Bearer local-dev-token-vision</code></span>
+            <span>Endpoint: <strong style="color: var(--ai-color);" id="aiUrlText">(theo .env)</strong></span>
+            <span>Auth Token: <code>Bearer &lt;AI_VISION_AUTH_TOKEN&gt;</code></span>
           </div>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
-          <span class="badge-status" id="aiBadgeStatus">🟢 ONLINE</span>
+          <span class="badge-status badge-online" id="aiBadgeStatus">ONLINE</span>
           <button class="btn btn-outline btn-sm" onclick="pingSinglePartner('ai-vision')">Ping</button>
         </div>
       </div>
 
-      <!-- Inbound AI Alerts & Events Table -->
+      <!-- Inbound AI Alerts Table -->
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title">📥 Dữ Liệu Nhận Về: Cảnh Báo An Ninh & Nhận Diện Từ AI Vision</div>
-          <button class="btn btn-outline btn-sm" onclick="fetchAlerts()">Làm mới</button>
+          <div class="panel-title">
+            <svg class="icon" style="color: var(--ai-color);" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            Cảnh Báo An Ninh & Nhận Diện Từ AI Vision
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="fetchAlerts()">Làm Mới</button>
         </div>
         <div class="table-container">
           <table>
@@ -721,13 +1020,13 @@
 
       <!-- Outbound AI Suite Box -->
       <div class="form-grid">
-        <!-- Form Face Match & YOLO -->
         <div class="action-box">
-          <div style="font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-            <span>🤖</span> Gửi Yêu Cầu Xử Lý Sang AI Vision (Outbound)
+          <div style="font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+            <svg class="icon" style="color: var(--ai-color);" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+            Gửi Yêu Cầu Xử Lý Sang AI Vision (Outbound)
           </div>
           <div style="font-size: 0.8rem; color: var(--text-muted);">
-            Core gọi: <code style="color: var(--accent-cyan);">http://192.168.1.41:8000/vision/*</code>
+            Core gọi: <code id="aiBaseCodeUrl" style="color: var(--ai-color);">&lt;AI_VISION_URL&gt;/vision/*</code>
           </div>
           <div class="form-group">
             <label>Ngưỡng So Khớp (Confidence Threshold):</label>
@@ -735,25 +1034,25 @@
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
             <button class="btn btn-primary btn-sm" onclick="executeOutboundAiFaceMatch()">So Khớp Khuôn Mặt</button>
-            <button class="btn btn-primary btn-sm" style="background: #0284c7;" onclick="executeOutboundAiDetect()">Nhận Diện YOLO</button>
+            <button class="btn btn-primary btn-sm" style="background: var(--info);" onclick="executeOutboundAiDetect()">Nhận Diện YOLO</button>
             <button class="btn btn-outline btn-sm" onclick="executeOutboundAiModels()">Xem Model Info</button>
             <button class="btn btn-outline btn-sm" onclick="executeOutboundAiRecent()">Detections Gần Đây</button>
           </div>
           <div class="code-console" id="outboundAiResult">// Kết quả trả về từ AI Vision Service...</div>
         </div>
 
-        <!-- Giả lập AI Vision bắn sang Core -->
         <div class="action-box">
-          <div style="font-weight: 700; color: #f87171; display: flex; align-items: center; gap: 0.5rem;">
-            <span>🚨</span> Giả Lập: AI Vision Bắn Cảnh Báo An Ninh Sang Core
+          <div style="font-weight: 700; color: var(--danger); display: flex; align-items: center; gap: 0.5rem;">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            Giả Lập: AI Vision Bắn Cảnh Báo An Ninh Sang Core
           </div>
           <p style="font-size: 0.8rem; color: var(--text-muted);">
             Mô phỏng camera phát hiện đối tượng lạ đột nhập Cổng Chính (Risk: HIGH).
           </p>
-          <button class="btn btn-primary" style="background: #ef4444;" onclick="simulateAlert()">Bắn Cảnh Báo Sang Core</button>
+          <button class="btn btn-primary" style="background: var(--danger);" onclick="simulateAlert()">Bắn Cảnh Báo Sang Core</button>
 
-          <div style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
-            <div style="font-weight: 700; color: #c084fc; font-size: 0.85rem; margin-bottom: 0.5rem;">👁️ Bắn Sự Kiện Nhận Diện Đối Tượng (YOLO)</div>
+          <div style="margin-top: 1rem; border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
+            <div style="font-weight: 700; color: var(--ai-color); font-size: 0.85rem; margin-bottom: 0.5rem;">Bắn Sự Kiện Nhận Diện Đối Tượng (YOLO)</div>
             <button class="btn btn-outline btn-sm" onclick="simulateAiDetectionEvent()">Bắn Detection Event</button>
           </div>
         </div>
@@ -761,19 +1060,21 @@
     </div>
 
     <!-- ========================================================== -->
-    <!-- TAB 3: IOT INGESTION (NHÓM 1) -->
+    <!-- TAB 3: IOT INGESTION -->
     <!-- ========================================================== -->
     <div id="tab-iot" class="tab-pane">
-      <!-- Banner Status -->
       <div class="partner-banner banner-iot">
         <div>
-          <div class="banner-title">🌡️ Phân Hệ IoT Ingestion — Cảm Biến Môi Trường (Nhóm 1)</div>
+          <div class="banner-title">
+            <svg class="icon" style="color: var(--iot-color);" viewBox="0 0 24 24"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg>
+            Phân Hệ IoT Ingestion — Cảm Biến Môi Trường
+          </div>
           <div class="banner-meta">
-            <span>Địa chỉ IP: <strong style="color: var(--accent-cyan);" id="iotUrlText">http://192.168.1.11:8000</strong></span>
+            <span>Endpoint: <strong style="color: var(--iot-color);" id="iotUrlText">(theo .env)</strong></span>
           </div>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
-          <span class="badge-status" id="iotBadgeStatus">🟢 ONLINE</span>
+          <span class="badge-status badge-online" id="iotBadgeStatus">ONLINE</span>
           <button class="btn btn-outline btn-sm" onclick="pingSinglePartner('iot-ingestion')">Ping</button>
         </div>
       </div>
@@ -781,8 +1082,11 @@
       <!-- Inbound IoT Events Table -->
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title">📥 Dữ Liệu Nhận Về: Luồng Dữ Liệu Cảm Biến Môi Trường (POST /events)</div>
-          <button class="btn btn-outline btn-sm" onclick="fetchEvents()">Làm mới</button>
+          <div class="panel-title">
+            <svg class="icon" style="color: var(--iot-color);" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            Luồng Dữ Liệu Cảm Biến Môi Trường Tiếp Nhận (POST /events)
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="fetchEvents()">Làm Mới</button>
         </div>
         <div class="table-container">
           <table>
@@ -791,7 +1095,7 @@
                 <th>Event ID</th>
                 <th>Loại Sự Kiện</th>
                 <th>Nguồn Cảm Biến</th>
-                <th>Thông Số Đo Đạc (Nhiệt độ, Độ ẩm, Khói)</th>
+                <th>Thông Số Đo Đạc (Nhiệt độ, Độ ẩm)</th>
                 <th>Thời Gian Ghi Nhận</th>
               </tr>
             </thead>
@@ -805,50 +1109,57 @@
       <!-- Simulator Box -->
       <div class="form-grid">
         <div class="action-box">
-          <div style="font-weight: 700; color: #38bdf8;">🎮 Giả Lập: IoT Gửi Dữ Liệu Cảm Biến Sang Core</div>
+          <div style="font-weight: 700; color: var(--iot-color); display: flex; align-items: center; gap: 0.5rem;">
+            <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Giả Lập: IoT Gửi Dữ Liệu Cảm Biến Sang Core
+          </div>
           <p style="font-size: 0.8rem; color: var(--text-muted);">
-            Mô phỏng cảm biến môi trường phòng Server gửi nhiệt độ 38.5°C vượt ngưỡng an toàn.
+            Mô phỏng cảm biến phòng Server gửi nhiệt độ <strong>42.5°C</strong> vượt ngưỡng an toàn (40°C) và tự động sinh Alert.
           </p>
-          <button class="btn btn-primary" style="background: #06b6d4;" onclick="simulateIotEvent()">Bắn Sự Kiện Cảm Biến IoT</button>
+          <button class="btn btn-primary" style="background: var(--iot-color);" onclick="simulateIotEvent()">Bắn Sự Kiện Cảm Biến Quá Nhiệt</button>
         </div>
       </div>
     </div>
 
     <!-- ========================================================== -->
-    <!-- TAB 4: ANALYTICS (NHÓM 5) -->
+    <!-- TAB 4: ANALYTICS & MQTT -->
     <!-- ========================================================== -->
     <div id="tab-analytics" class="tab-pane">
-      <!-- Banner Status -->
       <div class="partner-banner banner-analytics">
         <div>
-          <div class="banner-title">📊 Phân Hệ Analytics — Thống Kê & Phân Tích Dữ Liệu (Nhóm 5)</div>
+          <div class="banner-title">
+            <svg class="icon" style="color: var(--analytics-color);" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            Phân Hệ Analytics & MQTT Message Broker
+          </div>
           <div class="banner-meta">
-            <span>Địa chỉ IP: <strong style="color: var(--accent-cyan);" id="analyticsUrlText">http://192.168.1.51:8000</strong></span>
+            <span>Endpoint: <strong style="color: var(--analytics-color);" id="analyticsUrlText">(theo .env)</strong></span>
           </div>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
-          <span class="badge-status" id="analyticsBadgeStatus">🟢 ONLINE</span>
+          <span class="badge-status badge-online" id="analyticsBadgeStatus">ONLINE</span>
           <button class="btn btn-outline btn-sm" onclick="pingSinglePartner('analytics')">Ping</button>
         </div>
       </div>
 
-      <!-- Dữ liệu cung cấp cho Analytics -->
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title">📡 MQTT Message Broker (192.168.1.51:1883) — Đẩy Sự Kiện Nghiệp Vụ Sang Analytics</div>
+          <div class="panel-title" id="mqttPanelTitle">
+            <svg class="icon" style="color: var(--analytics-color);" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>
+            MQTT Message Broker — Đẩy Sự Kiện Nghiệp Vụ Sang Analytics
+          </div>
         </div>
-        <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
-          <div style="font-weight: 700; color: #38bdf8; margin-bottom: 0.25rem;">📍 Thông Tin Kết Nối MQTT Broker (Nhóm 5 - Quỳnh Đinh Trọng):</div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+          <div style="font-weight: 700; color: var(--analytics-color); margin-bottom: 0.25rem;">Thông Tin Kết Nối MQTT Broker:</div>
           <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
-            • <strong>Broker URL:</strong> <code style="color: #4ade80;">mqtt://192.168.1.51:1883</code> | <strong>Topic:</strong> <code style="color: #38bdf8;">business.events</code> (Anonymous)<br/>
-            • <strong>Hợp đồng:</strong> <code style="color: #facc15;">event-contract-08-core-analytics.md</code> (Chuẩn snake_case phần data).
+            • <strong>Broker URL:</strong> <code id="mqttBrokerCode" style="color: var(--success);">mqtt://loading...</code> | <strong>Topic:</strong> <code id="mqttTopicCode" style="color: var(--iot-color);">business.events</code><br/>
+            • <strong>Hợp đồng:</strong> <code style="color: var(--warning);">event-contract-08-core-analytics.md</code> (Chuẩn snake_case trong phần data).
           </div>
         </div>
 
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
-          <button class="btn btn-primary" style="background: #e11d48;" onclick="publishMqttEvent('business.alert.created')">🚨 Bắn MQTT: business.alert.created</button>
-          <button class="btn btn-primary" style="background: #0284c7;" onclick="publishMqttEvent('business.policy.decision.created')">🚪 Bắn MQTT: business.policy.decision.created</button>
-          <button class="btn btn-primary" style="background: #16a34a;" onclick="publishMqttEvent('business.alert.resolved')">✅ Bắn MQTT: business.alert.resolved</button>
+          <button class="btn btn-primary" style="background: var(--danger);" onclick="publishMqttEvent('business.alert.created')">Bắn MQTT: business.alert.created</button>
+          <button class="btn btn-primary" style="background: var(--info);" onclick="publishMqttEvent('business.policy.decision.created')">Bắn MQTT: business.policy.decision.created</button>
+          <button class="btn btn-primary" style="background: var(--gate-color);" onclick="publishMqttEvent('business.alert.resolved')">Bắn MQTT: business.alert.resolved</button>
         </div>
 
         <div class="code-console" id="mqttPublishConsole">// Trạng thái MQTT Publish sang Analytics...</div>
@@ -856,48 +1167,56 @@
 
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title">📤 REST API: Core Cung Cấp Cho Analytics Kéo Về (GET /decisions, GET /alerts/recent)</div>
+          <div class="panel-title">
+            <svg class="icon" style="color: var(--primary);" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            REST API: Core Cung Cấp Cho Analytics Kéo Về (GET /decisions, GET /alerts/recent)
+          </div>
         </div>
         <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
-          Nếu Analytics kéo dữ liệu qua REST: Analytics gọi sang Core Business để lấy danh sách toàn bộ các lượt quẹt thẻ (Decisions) và các cảnh báo an ninh (Alerts).
+          Nếu Analytics kéo dữ liệu qua HTTP REST: Analytics gọi sang Core Business để lấy toàn bộ quyết định ra/vào và các cảnh báo an ninh.
         </p>
         <div style="margin-top: 1rem;">
-          <button class="btn btn-outline" onclick="executeOutboundAnalyticsCheck()">📈 Kiểm Tra REST Endpoint Analytics</button>
+          <button class="btn btn-outline" onclick="executeOutboundAnalyticsCheck()">Kiểm Tra REST Endpoint Analytics</button>
           <div class="code-console" id="outboundAnalyticsResult" style="margin-top: 0.75rem;">// Trạng thái Analytics REST...</div>
         </div>
       </div>
     </div>
 
     <!-- ========================================================== -->
-    <!-- TAB 5: NOTIFICATION (NHÓM 6) -->
+    <!-- TAB 5: NOTIFICATION -->
     <!-- ========================================================== -->
     <div id="tab-noti" class="tab-pane">
-      <!-- Banner Status -->
       <div class="partner-banner banner-noti">
         <div>
-          <div class="banner-title">🔔 Phân Hệ Notification — Kênh Phát Cảnh Báo (Nhóm 6)</div>
+          <div class="banner-title">
+            <svg class="icon" style="color: var(--noti-color);" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            Phân Hệ Notification — Kênh Phát Cảnh Báo
+          </div>
           <div class="banner-meta">
-            <span>Địa chỉ IP: <strong style="color: var(--accent-cyan);" id="notiUrlText">http://192.168.1.61:8000</strong></span>
+            <span>Endpoint: <strong style="color: var(--noti-color);" id="notiUrlText">(theo .env)</strong></span>
           </div>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
-          <span class="badge-status" id="notiBadgeStatus">🟢 ONLINE</span>
+          <span class="badge-status badge-online" id="notiBadgeStatus">ONLINE</span>
           <button class="btn btn-outline btn-sm" onclick="pingSinglePartner('notification')">Ping</button>
         </div>
       </div>
 
-      <!-- Kênh thông báo -->
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title">📢 Kênh Truyền Phát Cảnh Báo Khẩn Cấp (SMS / Email / Push)</div>
+          <div class="panel-title">
+            <svg class="icon" style="color: var(--noti-color);" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            Kênh Truyền Phát Cảnh Báo Khẩn Cấp (SMS / Email / Push)
+          </div>
         </div>
         <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
-          Khi Core Business nhận được cảnh báo mức độ <span class="severity-badge sev-CRITICAL">CRITICAL</span> hoặc <span class="severity-badge sev-HIGH">HIGH</span>, Core sẽ chuyển tiếp sang Notification Service để gửi tin nhắn đến bảo vệ và ban quản trị.
+          Khi Core Business nhận được cảnh báo mức độ <span class="severity-badge sev-CRITICAL">CRITICAL</span> hoặc <span class="severity-badge sev-HIGH">HIGH</span>, hệ thống tự động chạy tác vụ nền <code>BackgroundTasks</code> gọi <code>POST /notifications/send</code> sang Notification Service.
         </p>
-        <div style="margin-top: 1rem;">
-          <button class="btn btn-primary" onclick="executeOutboundNotificationCheck()">📢 Kiểm Tra Kênh Thông Báo</button>
-          <div class="code-console" id="outboundNotificationResult" style="margin-top: 0.75rem;">// Trạng thái Notification Service...</div>
+        <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1rem;">
+          <button class="btn btn-outline" onclick="executeOutboundNotificationCheck()">Kiểm Tra Health Notification</button>
+          <button class="btn btn-primary" onclick="executeTestNotificationSend()">Gửi Thông Báo Thử Nghiệm</button>
         </div>
+        <div class="code-console" id="outboundNotificationResult" style="margin-top: 0.75rem;">// Trạng thái Notification Service...</div>
       </div>
     </div>
 
@@ -907,8 +1226,13 @@
     <div id="tab-radar" class="tab-pane">
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title">📡 Radar Kết Nối Toàn Bộ 5 Nhóm Đối Tác Trong Mạng LAN</div>
-          <span style="font-size: 0.8rem; color: var(--text-muted);">Tự động quét mỗi 5s</span>
+          <div class="panel-title">
+            <svg class="icon" style="color: var(--primary);" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M16.2 7.8a6 6 0 0 1 0 8.4"></path><path d="M19.1 4.9a10 10 0 0 1 0 14.2"></path></svg>
+            Radar Kết Nối Toàn Bộ 5 Nhóm Đối Tác Trong Mạng LAN
+          </div>
+          <span style="font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem;">
+            <span class="pulse-dot" style="width: 6px; height: 6px;"></span> Tự động quét mỗi 5s
+          </span>
         </div>
         <div class="radar-grid" id="radarGrid">
           <!-- Render dynamically via JavaScript -->
@@ -917,7 +1241,10 @@
 
       <div class="panel">
         <div class="panel-header">
-          <div class="panel-title">📋 Danh Mục Hợp Đồng API Của Core Business (Máy Bạn)</div>
+          <div class="panel-title">
+            <svg class="icon" style="color: var(--primary);" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            Danh Mục Hợp Đồng API Của Core Business (OpenAPI 3.1.0)
+          </div>
         </div>
         <div class="table-container">
           <table>
@@ -935,35 +1262,35 @@
                 <td><span class="severity-badge sev-LOW">GET</span></td>
                 <td><code>/health</code></td>
                 <td>Toàn bộ các nhóm</td>
-                <td>Kiểm tra Core Business có sống hay không</td>
+                <td>Kiểm tra trạng thái Core Business & Storage</td>
                 <td>Public</td>
               </tr>
               <tr>
                 <td><span class="severity-badge sev-MEDIUM">POST</span></td>
                 <td><code>/access/check</code></td>
                 <td><strong>Access Gate</strong></td>
-                <td>Kiểm tra tính hợp lệ của thẻ và mở cổng</td>
+                <td>Kiểm tra chính sách POL-001 và đóng/mở cổng</td>
                 <td>Public</td>
               </tr>
               <tr>
                 <td><span class="severity-badge sev-HIGH">POST</span></td>
                 <td><code>/alerts</code></td>
                 <td><strong>AI Vision, IoT</strong></td>
-                <td>Báo cáo vi phạm an ninh, người lạ, khói lửa</td>
-                <td><code>Bearer mock-core-token-2026</code></td>
+                <td>Báo cáo vi phạm an ninh, khói lửa, đối tượng lạ</td>
+                <td><code>Bearer &lt;AUTH_TOKEN&gt;</code></td>
               </tr>
               <tr>
                 <td><span class="severity-badge sev-LOW">GET</span></td>
                 <td><code>/alerts/recent</code></td>
                 <td><strong>Analytics</strong></td>
-                <td>Lấy danh sách các cảnh báo để vẽ đồ thị</td>
+                <td>Lấy nhanh danh sách cảnh báo phục vụ thống kê</td>
                 <td>Public</td>
               </tr>
               <tr>
                 <td><span class="severity-badge sev-LOW">POST</span></td>
                 <td><code>/events</code></td>
-                <td><strong>IoT, AI Vision</strong></td>
-                <td>Tiếp nhận sự kiện thu thập dữ liệu</td>
+                <td><strong>IoT Ingestion</strong></td>
+                <td>Tiếp nhận sự kiện dữ liệu cảm biến đo đạc</td>
                 <td>Public</td>
               </tr>
             </tbody>
@@ -975,52 +1302,153 @@
   </div>
 
   <!-- TOAST NOTIFICATION -->
-  <div id="toast">Thông báo</div>
+  <div id="toast">
+    <svg class="icon" id="toastIcon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span id="toastMsg">Thông báo</span>
+  </div>
 
   <!-- FOOTER -->
   <footer>
-    Smart Campus Operations Platform • FIT4110 Dịch vụ kết nối và Công nghệ nền tảng • Core Business Service Container Stack
+    Smart Campus Operations Platform • FIT4110 Dịch vụ kết nối và Công nghệ nền tảng • Trường Đại học Đại Nam
   </footer>
 
+  <!-- ================================================================
+       JAVASCRIPT LOGIC
+       ================================================================ -->
   <script>
+    // Theme Switcher Logic (Dark / Light)
+    function initTheme() {
+      const savedTheme = localStorage.getItem('campusTheme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      updateThemeUI(savedTheme);
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const target = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', target);
+      localStorage.setItem('campusTheme', target);
+      updateThemeUI(target);
+    }
+
+    function updateThemeUI(theme) {
+      const icon = document.getElementById('themeIcon');
+      const text = document.getElementById('themeText');
+      if (theme === 'light') {
+        text.textContent = 'Light';
+        icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+      } else {
+        text.textContent = 'Dark';
+        icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+      }
+    }
+
+    initTheme();
+
     // Tab switching
-    function switchTab(tabId) {
+    function switchTab(tabId, evt) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
       
-      event.currentTarget.classList.add('active');
-      document.getElementById(tabId).classList.add('active');
+      const targetBtn = evt ? evt.currentTarget : document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
+      if (targetBtn) targetBtn.classList.add('active');
+      const targetPane = document.getElementById(tabId);
+      if (targetPane) targetPane.classList.add('active');
       
       if (tabId === 'tab-gate') {
         fetchGateRecentLogs();
       }
     }
 
-    // Toast
+    // Modern Toast Notification
     function showToast(message, type = 'success') {
       const toast = document.getElementById('toast');
-      toast.textContent = message;
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+      if (!toast || !toastMsg) return;
+      
+      toastMsg.textContent = message;
       toast.className = 'show ' + type;
+      if (type === 'error') {
+        toastIcon.innerHTML = '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>';
+      } else {
+        toastIcon.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline>';
+      }
       setTimeout(() => { toast.className = ''; }, 3500);
     }
 
-    // Partner metadata
-    const partnerMetadata = {
-      "access-gate": { name: "Access Gate", icon: "🚪", group: "Nhóm 3", defaultUrl: "http://192.168.1.31:8000", badgeId: "gateBadgeStatus" },
-      "ai-vision": { name: "AI Vision", icon: "👁️", group: "Nhóm 4", defaultUrl: "http://192.168.1.41:8000", badgeId: "aiBadgeStatus" },
-      "iot-ingestion": { name: "IoT Ingestion", icon: "🌡️", group: "Nhóm 1", defaultUrl: "http://192.168.1.11:8000", badgeId: "iotBadgeStatus" },
-      "analytics": { name: "Analytics", icon: "📊", group: "Nhóm 5", defaultUrl: "http://192.168.1.51:8000", badgeId: "analyticsBadgeStatus" },
-      "notification": { name: "Notification", icon: "🔔", group: "Nhóm 6", defaultUrl: "http://192.168.1.61:8000", badgeId: "notiBadgeStatus" }
+    // Runtime config loaded from /integrations/config
+    let runtimeConfig = {
+      storageBackend: "memory",
+      partners: {},
+      mqtt: { host: "localhost", port: 1883, topic: "business.events" }
     };
+    let isFetchingAll = false;
+
+    const partnerMetadata = {
+      "access-gate": { name: "Access Gate", group: "Đối tác Cổng", textId: "gateUrlText", defaultUrl: "", badgeId: "gateBadgeStatus" },
+      "ai-vision": { name: "AI Vision", group: "Đối tác AI", textId: "aiUrlText", defaultUrl: "", badgeId: "aiBadgeStatus" },
+      "iot-ingestion": { name: "IoT Ingestion", group: "Đối tác IoT", textId: "iotUrlText", defaultUrl: "", badgeId: "iotBadgeStatus" },
+      "analytics": { name: "Analytics", group: "Đối tác Dữ liệu", textId: "analyticsUrlText", defaultUrl: "", badgeId: "analyticsBadgeStatus" },
+      "notification": { name: "Notification", group: "Đối tác Thông báo", textId: "notiUrlText", defaultUrl: "", badgeId: "notiBadgeStatus" }
+    };
+
+    function getPartnerUrl(key) {
+      return (runtimeConfig.partners && runtimeConfig.partners[key]) || (partnerMetadata[key] && partnerMetadata[key].defaultUrl) || '(chưa cấu hình)';
+    }
+
+    async function loadIntegrationConfig() {
+      const hostEl = document.getElementById('coreHostText');
+      if (hostEl) hostEl.textContent = `Host: ${window.location.host}`;
+      const tokenInput = document.getElementById('apiTokenInput');
+      if (tokenInput) {
+        const saved = localStorage.getItem('coreApiToken');
+        if (saved) tokenInput.value = saved;
+        tokenInput.addEventListener('change', () => localStorage.setItem('coreApiToken', tokenInput.value.trim()));
+      }
+      try {
+        const res = await fetch('/integrations/config');
+        if (!res.ok) return;
+        const cfg = await res.json();
+        runtimeConfig = cfg;
+        const statusEl = document.getElementById('coreStatusText');
+        if (statusEl) statusEl.textContent = `CORE ONLINE (v${cfg.version})`;
+        const storageEl = document.getElementById('storageBadge');
+        if (storageEl) storageEl.textContent = `DB: ${String(cfg.storageBackend || '').toUpperCase()}`;
+
+        for (const [key, url] of Object.entries(cfg.partners || {})) {
+          if (partnerMetadata[key]) {
+            partnerMetadata[key].defaultUrl = url;
+            const textEl = document.getElementById(partnerMetadata[key].textId);
+            if (textEl) textEl.textContent = url;
+          }
+        }
+        const gateUrl = getPartnerUrl('access-gate');
+        const gateCardEl = document.getElementById('gateCardCodeUrl');
+        if (gateCardEl) gateCardEl.textContent = `GET ${gateUrl}/cards/{cardId}`;
+        const gateStatusEl = document.getElementById('gateStatusCodeUrl');
+        if (gateStatusEl) gateStatusEl.textContent = `GET ${gateUrl}/gates/{gateId}/status`;
+        const aiBaseEl = document.getElementById('aiBaseCodeUrl');
+        if (aiBaseEl) aiBaseEl.textContent = `${getPartnerUrl('ai-vision')}/vision/*`;
+        const mqttTitleEl = document.getElementById('mqttPanelTitle');
+        if (mqttTitleEl && cfg.mqtt) mqttTitleEl.innerHTML = `<svg class="icon" style="color: var(--analytics-color);" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg> MQTT Message Broker (${cfg.mqtt.host}:${cfg.mqtt.port}) — Đẩy Sự Kiện Nghiệp Vụ Sang Analytics`;
+        const mqttBrokerEl = document.getElementById('mqttBrokerCode');
+        if (mqttBrokerEl && cfg.mqtt) mqttBrokerEl.textContent = `mqtt://${cfg.mqtt.host}:${cfg.mqtt.port}`;
+        const mqttTopicEl = document.getElementById('mqttTopicCode');
+        if (mqttTopicEl && cfg.mqtt) mqttTopicEl.textContent = cfg.mqtt.topic;
+      } catch (e) {
+        console.error("Config fetch error", e);
+      }
+    }
 
     // Clear Buffer Data
     async function clearBufferData() {
-      if (confirm("Bạn có muốn làm sạch toàn bộ dữ liệu mẫu trong bảng để sẵn sàng nhận 100% dữ liệu thật từ các nhóm khác không?")) {
+      if (confirm("Làm sạch toàn bộ bảng dữ liệu để sẵn sàng nhận luồng dữ liệu mới?")) {
         try {
           const res = await fetch('/dashboard/clear-data', { method: 'POST' });
           const data = await res.json();
           showToast(data.message, "success");
-          fetchAllData();
+          fetchAllData(true);
         } catch (e) {
           showToast("Lỗi khi xóa dữ liệu: " + e.message, "error");
         }
@@ -1029,6 +1457,11 @@
 
     // Fetch All Data
     async function fetchAllData(manual = false) {
+      if (!manual && isFetchingAll) return;
+      isFetchingAll = true;
+      const refIcon = document.getElementById('refreshIcon');
+      if (refIcon && manual) refIcon.style.animation = 'spin 0.8s linear infinite';
+      
       try {
         await Promise.all([
           fetchRadarStatus(),
@@ -1040,10 +1473,13 @@
         if (manual) showToast("Đã quét và làm mới toàn bộ dữ liệu hệ thống!", "success");
       } catch (err) {
         if (manual) showToast("Lỗi khi quét dữ liệu: " + err.message, "error");
+      } finally {
+        isFetchingAll = false;
+        if (refIcon) refIcon.style.animation = '';
       }
     }
 
-    // 1. Radar
+    // 1. Radar Status
     async function fetchRadarStatus() {
       try {
         const res = await fetch('/integrations/status');
@@ -1052,42 +1488,48 @@
         const radarGrid = document.getElementById('radarGrid');
         if (radarGrid) radarGrid.innerHTML = '';
 
-        for (const [key, p] of Object.entries(data.partners)) {
-          const meta = partnerMetadata[key] || { name: p.service, icon: "📦", group: "Đối tác", defaultUrl: p.url, badgeId: "" };
-          const isOnline = p.status === 'ONLINE';
+        let onlineCount = 0;
+        let totalCount = 0;
 
-          // Update banner badge
+        for (const [key, p] of Object.entries(data.partners)) {
+          totalCount++;
+          const meta = partnerMetadata[key] || { name: p.service, group: "Đối tác", defaultUrl: p.url, badgeId: "" };
+          const isOnline = p.status === 'ONLINE';
+          if (isOnline) onlineCount++;
+
           if (meta.badgeId && document.getElementById(meta.badgeId)) {
             const badgeEl = document.getElementById(meta.badgeId);
             badgeEl.className = `badge-status ${isOnline ? 'badge-online' : 'badge-offline'}`;
-            badgeEl.textContent = isOnline ? `🟢 ONLINE (${p.latencyMs}ms)` : '🔴 OFFLINE';
+            badgeEl.textContent = isOnline ? `ONLINE (${p.latencyMs}ms)` : 'OFFLINE';
           }
 
-          // Build radar card
           if (radarGrid) {
             const card = document.createElement('div');
             card.className = `partner-card ${isOnline ? 'online' : 'offline'}`;
             card.innerHTML = `
               <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
-                  <div style="font-weight: 700; font-size: 1rem; color: #fff;">${meta.icon} ${meta.name} (${meta.group})</div>
-                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-cyan); margin-top: 2px;">${p.url || meta.defaultUrl}</div>
+                  <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">${meta.name} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 400;">(${meta.group})</span></div>
+                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; color: var(--primary); margin-top: 2px;">${p.url || meta.defaultUrl}</div>
                 </div>
                 <span class="badge-status ${isOnline ? 'badge-online' : 'badge-offline'}">
-                  ${isOnline ? '🟢 ONLINE' : '🔴 OFFLINE'}
+                  ${isOnline ? 'ONLINE' : 'OFFLINE'}
                 </span>
               </div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; background: rgba(0, 0, 0, 0.2); padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.75rem;">
-                <div>Độ trễ: <strong style="color:#fff;">${p.latencyMs !== null ? p.latencyMs + ' ms' : '--'}</strong></div>
-                <div>HTTP: <strong style="color:#fff;">${p.statusCode || '--'}</strong></div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; background: var(--bg-badge); padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.75rem;">
+                <div>Độ trễ: <strong style="color:var(--text-main);">${p.latencyMs !== null ? p.latencyMs + ' ms' : '--'}</strong></div>
+                <div>HTTP: <strong style="color:var(--text-main);">${p.statusCode || '--'}</strong></div>
               </div>
               <div style="display: flex; justify-content: flex-end;">
-                <button class="btn btn-outline btn-sm" onclick="pingSinglePartner('${key}')">Ping ngay</button>
+                <button class="btn btn-outline btn-sm" onclick="pingSinglePartner('${key}')">Ping Ngay</button>
               </div>
             `;
             radarGrid.appendChild(card);
           }
         }
+
+        const partEl = document.getElementById('metricPartners');
+        if (partEl) partEl.textContent = `${onlineCount}/${totalCount} ONLINE`;
       } catch (e) {
         console.error("Radar fetch failed", e);
       }
@@ -1126,16 +1568,16 @@
         }
 
         if (logs.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-dim);">${data.error ? 'Chờ máy Gate bật server: ' + data.error : 'Chưa có bản ghi quẹt thẻ nào từ Gate'}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-dim);">${data.error ? 'Chờ dịch vụ Gate kết nối: ' + data.error : 'Chưa có bản ghi quẹt thẻ nào từ Gate'}</td></tr>`;
           return;
         }
 
         tbody.innerHTML = logs.map(l => `
           <tr>
             <td><code style="font-size: 0.75rem;">${(l.logId || l.id || '--').substring(0, 8)}...</code></td>
-            <td><strong style="color: #67e8f9; font-family: var(--font-mono);">${l.uid || l.cardId || '--'}</strong></td>
+            <td><strong style="color: var(--gate-color); font-family: 'JetBrains Mono', monospace;">${l.uid || l.cardId || '--'}</strong></td>
             <td><strong>${l.gateId || 'GATE-01'}</strong></td>
-            <td><span style="color: ${l.direction === 'IN' ? '#34d399' : '#f59e0b'}; font-weight: 700;">${l.direction || 'IN'}</span></td>
+            <td><span style="color: ${l.direction === 'IN' ? 'var(--gate-color)' : 'var(--analytics-color)'}; font-weight: 700;">${l.direction || 'IN'}</span></td>
             <td><span class="result-badge ${l.status === 'granted' || l.status === 'ALLOW' ? 'res-ALLOW' : 'res-DENY'}">${(l.status || 'GRANTED').toUpperCase()}</span></td>
             <td style="font-size: 0.75rem; color: var(--text-muted);">${l.timestamp ? new Date(l.timestamp).toLocaleTimeString() : '--'}</td>
           </tr>
@@ -1152,6 +1594,9 @@
         const data = await res.json();
         const items = data.items || [];
 
+        const metricEl = document.getElementById('metricAlerts');
+        if (metricEl) metricEl.textContent = items.length;
+
         const tbody = document.getElementById('aiAlertsTableBody');
         if (!tbody) return;
 
@@ -1164,10 +1609,10 @@
           <tr>
             <td><code style="font-size: 0.75rem; color: var(--text-muted);">${a.id.substring(0, 8)}...</code></td>
             <td><span class="severity-badge sev-${a.severity}">${a.severity}</span></td>
-            <td><strong style="color: #f87171;">${a.alertType}</strong></td>
+            <td><strong style="color: var(--danger);">${a.alertType}</strong></td>
             <td>${a.message}</td>
-            <td><span style="color: var(--accent-cyan); font-weight: 600;">${a.sourceService}</span></td>
-            <td><span style="color: ${a.status === 'OPEN' ? '#f87171' : '#34d399'}; font-weight: 600;">${a.status}</span></td>
+            <td><span style="color: var(--primary); font-weight: 600;">${a.sourceService}</span></td>
+            <td><span style="color: ${a.status === 'OPEN' ? 'var(--danger)' : 'var(--success)'}; font-weight: 600;">${a.status}</span></td>
             <td style="font-size: 0.75rem; color: var(--text-muted);">${new Date(a.createdAt).toLocaleTimeString()}</td>
             <td>
               ${a.status === 'OPEN' ? `<button class="btn btn-outline btn-sm" onclick="resolveAlert('${a.id}')">Đã xử lý</button>` : `<span style="color: var(--text-dim); font-size: 0.75rem;">Đã đóng</span>`}
@@ -1197,10 +1642,13 @@
         const res = await fetch('/decisions');
         const items = await res.json();
 
+        const metricEl = document.getElementById('metricDecisions');
+        if (metricEl) metricEl.textContent = Array.isArray(items) ? items.length : '--';
+
         const tbody = document.getElementById('gateDecisionsTableBody');
         if (!tbody) return;
 
-        if (items.length === 0) {
+        if (!Array.isArray(items) || items.length === 0) {
           tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-dim);">Chưa có lượt quẹt thẻ nào từ Access Gate</td></tr>';
           return;
         }
@@ -1208,11 +1656,11 @@
         tbody.innerHTML = items.map(d => `
           <tr>
             <td><code style="font-size: 0.75rem;">${d.decisionId.substring(0, 8)}...</code></td>
-            <td><strong style="color: #93c5fd;">${d.cardId}</strong></td>
+            <td><strong style="color: var(--primary); font-family: 'JetBrains Mono', monospace;">${d.cardId}</strong></td>
             <td><span style="font-weight: 600;">${d.gateId}</span></td>
-            <td><span style="color: ${d.direction === 'IN' ? '#34d399' : '#f59e0b'}; font-weight: 700;">${d.direction || 'IN'}</span></td>
+            <td><span style="color: ${d.direction === 'IN' ? 'var(--gate-color)' : 'var(--analytics-color)'}; font-weight: 700;">${d.direction || 'IN'}</span></td>
             <td><span class="result-badge res-${d.result}">${d.result}</span></td>
-            <td>${d.reasonCode}</td>
+            <td><code>${d.reasonCode}</code></td>
             <td><span style="color: var(--text-muted);">${d.policyId}</span></td>
             <td style="font-size: 0.75rem; color: var(--text-muted);">${new Date(d.evaluatedAt).toLocaleTimeString()}</td>
           </tr>
@@ -1228,10 +1676,13 @@
         const res = await fetch('/events');
         const items = await res.json();
 
+        const metricEl = document.getElementById('metricEvents');
+        if (metricEl) metricEl.textContent = Array.isArray(items) ? items.length : '--';
+
         const tbody = document.getElementById('iotEventsTableBody');
         if (!tbody) return;
 
-        if (items.length === 0) {
+        if (!Array.isArray(items) || items.length === 0) {
           tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim);">Chưa có sự kiện cảm biến nào</td></tr>';
           return;
         }
@@ -1239,9 +1690,9 @@
         tbody.innerHTML = items.map(e => `
           <tr>
             <td><code style="font-size: 0.75rem;">${e.eventId.substring(0, 8)}...</code></td>
-            <td><strong style="color: #06b6d4;">${e.eventType}</strong></td>
-            <td><span style="color: var(--accent-cyan); font-weight: 600;">${e.sourceService}</span></td>
-            <td><code style="font-size: 0.75rem; color: #a7f3d0;">${JSON.stringify(e.payload || {})}</code></td>
+            <td><strong style="color: var(--iot-color);">${e.eventType}</strong></td>
+            <td><span style="color: var(--primary); font-weight: 600;">${e.sourceService}</span></td>
+            <td><code style="font-size: 0.75rem; color: var(--text-main);">${JSON.stringify(e.payload || {})}</code></td>
             <td style="font-size: 0.75rem; color: var(--text-muted);">${new Date(e.receivedAt).toLocaleTimeString()}</td>
           </tr>
         `).join('');
@@ -1254,9 +1705,9 @@
     async function executeOutboundGateCard() {
       const cardId = document.getElementById('outboundCardId').value.trim() || '04:A1:B2:C3:D4:01';
       const consoleBox = document.getElementById('outboundGateResult');
-      consoleBox.textContent = "⏳ Đang gửi yêu cầu sang Access Gate (192.168.1.31:8000)...";
+      consoleBox.textContent = `⏳ Đang gửi yêu cầu sang Access Gate (${getPartnerUrl('access-gate')})...`;
       try {
-        const res = await fetch(`/integrations/gate/cards/${cardId}`);
+        const res = await fetch(`/integrations/gate/cards/${encodeURIComponent(cardId)}`);
         const data = await res.json();
         consoleBox.textContent = JSON.stringify(data, null, 2);
         showToast("Đã nhận kết quả tra cứu thẻ từ Access Gate!", "success");
@@ -1269,9 +1720,9 @@
     async function executeOutboundGateStatus() {
       const gateId = document.getElementById('outboundGateId').value.trim() || 'GATE-01';
       const consoleBox = document.getElementById('outboundGateStatusResult');
-      consoleBox.textContent = `⏳ Đang kiểm tra trạng thái cổng ${gateId} (192.168.1.31:8000)...`;
+      consoleBox.textContent = `⏳ Đang kiểm tra trạng thái cổng ${gateId} (${getPartnerUrl('access-gate')})...`;
       try {
-        const res = await fetch(`/integrations/gate/gates/${gateId}/status`);
+        const res = await fetch(`/integrations/gate/gates/${encodeURIComponent(gateId)}/status`);
         const data = await res.json();
         consoleBox.textContent = JSON.stringify(data, null, 2);
         showToast(`Đã nhận trạng thái cổng ${gateId}!`, "success");
@@ -1283,7 +1734,7 @@
     async function executeOutboundAiFaceMatch() {
       const threshold = parseFloat(document.getElementById('outboundAiThreshold').value) || 0.75;
       const consoleBox = document.getElementById('outboundAiResult');
-      consoleBox.textContent = "⏳ Đang gửi yêu cầu so khớp khuôn mặt sang AI Vision (192.168.1.41:8000)...";
+      consoleBox.textContent = `⏳ Đang gửi yêu cầu so khớp khuôn mặt sang AI Vision (${getPartnerUrl('ai-vision')})...`;
       try {
         const res = await fetch(`/integrations/ai-vision/face-match`, {
           method: 'POST',
@@ -1301,7 +1752,7 @@
 
     async function executeOutboundAiDetect() {
       const consoleBox = document.getElementById('outboundAiResult');
-      consoleBox.textContent = "⏳ Đang gửi yêu cầu nhận diện vật thể YOLO sang AI Vision (192.168.1.41:8000)...";
+      consoleBox.textContent = `⏳ Đang gửi yêu cầu nhận diện vật thể YOLO sang AI Vision (${getPartnerUrl('ai-vision')})...`;
       try {
         const res = await fetch(`/integrations/ai-vision/detect`, {
           method: 'POST',
@@ -1347,7 +1798,7 @@
 
     async function executeOutboundAnalyticsCheck() {
       const consoleBox = document.getElementById('outboundAnalyticsResult');
-      consoleBox.textContent = "⏳ Đang kiểm tra kết nối sang Analytics (192.168.1.51:8000)...";
+      consoleBox.textContent = `⏳ Đang kiểm tra kết nối sang Analytics (${getPartnerUrl('analytics')})...`;
       try {
         const res = await fetch(`/integrations/analytics/health`);
         const data = await res.json();
@@ -1360,7 +1811,8 @@
 
     async function publishMqttEvent(eventType) {
       const consoleBox = document.getElementById('mqttPublishConsole');
-      consoleBox.textContent = `⏳ Đang publish sự kiện '${eventType}' sang MQTT Broker 192.168.1.51:1883 (Topic: business.events)...`;
+      const mqttTarget = `${runtimeConfig.mqtt.host}:${runtimeConfig.mqtt.port}`;
+      consoleBox.textContent = `⏳ Đang publish sự kiện '${eventType}' sang MQTT Broker ${mqttTarget} (Topic: ${runtimeConfig.mqtt.topic})...`;
       try {
         const res = await fetch(`/integrations/analytics/mqtt/publish?event_type=${encodeURIComponent(eventType)}`, {
           method: 'POST'
@@ -1368,9 +1820,9 @@
         const data = await res.json();
         consoleBox.textContent = JSON.stringify(data, null, 2);
         if (data.status === 'success') {
-          showToast(`Đã publish '${eventType}' lên MQTT Broker thành công!`, "success");
+          showToast(`Đã publish '${eventType}' lên MQTT Broker!`, "success");
         } else {
-          showToast(`Không thể kết nối tới Broker 192.168.1.51:1883`, "error");
+          showToast(`Không thể kết nối tới Broker ${mqttTarget}`, "error");
         }
       } catch (e) {
         consoleBox.textContent = "❌ Lỗi: " + e.message;
@@ -1380,7 +1832,7 @@
 
     async function executeOutboundNotificationCheck() {
       const consoleBox = document.getElementById('outboundNotificationResult');
-      consoleBox.textContent = "⏳ Đang kiểm tra kết nối sang Notification (192.168.1.61:8000)...";
+      consoleBox.textContent = `⏳ Đang kiểm tra kết nối sang Notification (${getPartnerUrl('notification')})...`;
       try {
         const res = await fetch(`/integrations/notification/health`);
         const data = await res.json();
@@ -1391,18 +1843,59 @@
       }
     }
 
+    async function executeTestNotificationSend() {
+      const consoleBox = document.getElementById('outboundNotificationResult');
+      consoleBox.textContent = `⏳ Đang gửi cảnh báo thử nghiệm tới Notification (${getPartnerUrl('notification')})...`;
+      try {
+        const res = await fetch('/integrations/notification/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipient: 'security-ops@campus.local',
+            channel: 'EMAIL',
+            severity: 'HIGH',
+            subject: '[TEST] Cảnh báo an ninh Smart Campus',
+            message: 'Kiểm thử luồng đẩy thông báo từ Core Business Operations Dashboard.'
+          })
+        });
+        const data = await res.json();
+        consoleBox.textContent = JSON.stringify(data, null, 2);
+        showToast(data.status === 'success' ? "Đã gửi Notification thử nghiệm thành công!" : "Không kết nối được Notification Service", data.status === 'success' ? "success" : "error");
+      } catch (e) {
+        consoleBox.textContent = "❌ Lỗi: " + e.message;
+      }
+    }
+
+    function getConfiguredApiToken() {
+      const input = document.getElementById('apiTokenInput');
+      let token = (input && input.value.trim()) || localStorage.getItem('coreApiToken') || '';
+      if (!token) {
+        token = window.prompt("Nhập AUTH_TOKEN (trong file .env) để xác thực POST /alerts:") || '';
+        if (token && input) {
+          input.value = token;
+          localStorage.setItem('coreApiToken', token);
+        }
+      }
+      return token;
+    }
+
     // Simulators
     async function simulateAlert() {
+      const token = getConfiguredApiToken();
+      if (!token) {
+        showToast("Cần nhập AUTH_TOKEN để gọi POST /alerts!", "error");
+        return;
+      }
       try {
         const res = await fetch('/alerts', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer mock-core-token-2026'
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             sourceService: 'ai-vision',
-            alertType: 'UNAUTHORIZED_PERSON',
+            alertType: 'UNKNOWN_PERSON',
             severity: 'HIGH',
             message: 'Phát hiện người lạ không đeo thẻ sinh viên tại Cổng Chính'
           })
@@ -1410,6 +1903,9 @@
         if (res.ok) {
           showToast("Đã giả lập gửi Cảnh Báo An Ninh thành công!", "success");
           fetchAlerts();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          showToast(`POST /alerts thất bại (${res.status}): ${err.detail || 'Unauthorized'}`, "error");
         }
       } catch (e) {
         showToast("Lỗi giả lập: " + e.message, "error");
@@ -1425,11 +1921,13 @@
             cardId: 'RFID-2026-001',
             gateId: 'GATE-01',
             direction: 'IN',
-            idempotencyKey: 'sim-' + Date.now()
+            idempotencyKey: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('sim-' + Date.now()),
+            timestamp: '2026-05-10T08:00:00Z'
           })
         });
         if (res.ok) {
-          showToast("Đã giả lập quẹt thẻ Access Gate thành công (ALLOW)!", "success");
+          const decision = await res.json();
+          showToast(`Đã giả lập quẹt thẻ Access Gate (${decision.result})!`, "success");
           fetchDecisions();
         }
       } catch (e) {
@@ -1443,15 +1941,24 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            eventId: 'evt-' + Date.now(),
+            eventId: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('evt-' + Date.now()),
             sourceService: 'iot-ingestion',
-            eventType: 'TEMPERATURE_WARNING',
-            payload: { sensorId: 'SENSOR-ROOM-402', temperature: 38.5, humidity: 62.0 }
+            eventType: 'sensor.threshold.exceeded',
+            payload: {
+              deviceId: 'SENSOR-ROOM-402',
+              metric: 'temperature',
+              value: 42.5,
+              unit: 'C',
+              locationId: 'SERVER-ROOM',
+              temperature: 42.5,
+              humidity: 62.0
+            }
           })
         });
         if (res.ok) {
-          showToast("Đã giả lập tiếp nhận sự kiện IoT thành công!", "success");
+          showToast("Đã giả lập sự kiện IoT quá nhiệt (42.5°C) & tạo Alert!", "success");
           fetchEvents();
+          fetchAlerts();
         }
       } catch (e) {
         showToast("Lỗi giả lập: " + e.message, "error");
@@ -1488,8 +1995,8 @@
     }
 
     // Auto-init and background refresh
-    fetchAllData();
-    setInterval(fetchAllData, 5000);
+    loadIntegrationConfig().then(() => fetchAllData());
+    setInterval(() => fetchAllData(false), 5000);
   </script>
 </body>
 </html>

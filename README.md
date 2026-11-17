@@ -11,8 +11,8 @@
 
 | STT | Mã Sinh Viên | Họ và Tên | Lớp | Tỷ Lệ Thực Hiện |
 | :---: | :---: | :---| :---: | :---: |
-| **1** | **1771020189** | **Lê Tuấn Dũng** *(Trưởng nhóm)* | **KHMT 17-01** | **40%** |
-| **2** | 1771040024 | Nguyễn Duy Thuận | KHMT 17-01 | 20% |
+| **1** | **1771020189** | **Lê Tuấn Dũng** *(Trưởng nhóm)* | **KHMT 17-01** | **35%** |
+| **2** | 1771040024 | Nguyễn Duy Thuận | KHMT 17-01 | 25% |
 | **3** | 1771040025 | Nguyễn Văn Tiến | KHMT 17-01 | 20% |
 | **4** | 1771040011 | Bế Quang Hải | KHMT 17-01 | 20% |
 
@@ -103,10 +103,23 @@ Core_Business_Service/
 │   ├── postman/                                 # Bộ kiểm thử Postman/Newman trên Container
 │   └── reports/                                 # Báo cáo JUnit XML & HTML Extra
 │
-└── FIT4110_lab05_docker_compose-main/          # LAB 05: Đa dịch vụ Docker Compose & Plug-a-thon
-    ├── docker-compose.yml                       # Cấu hình Docker Compose đa container
-    ├── RUN_COMPOSE.md                           # Hướng dẫn chạy đa dịch vụ
-    └── README.md                                # Tài liệu Lab 05
+└── FIT4110_lab05_docker_compose-main/          # LAB 05: Đa dịch vụ Docker Compose & Plug-a-thon (Final Stack)
+    ├── docker-compose.yml                       # Stack Core API (:8001) + PostgreSQL (:5433) + 5 Mock Profiles
+    ├── docker-compose.mock.yml                  # Override kết nối api với 5 mock services nội bộ (--profile mock)
+    ├── Dockerfile / Dockerfile.mock             # Multi-stage non-root image cho Core & Mocks
+    ├── .env.example                             # Cấu hình LAN / Storage Backend (postgres|memory) / Thresholds
+    ├── src/core_app/main.py                     # Core Business API, Rule Engine, BackgroundTasks & Async Radar
+    ├── src/core_app/storage.py                  # Dual Storage Abstraction (PostgresStore & InMemoryStore)
+    ├── src/core_app/templates/dashboard.html    # Live Operations Dashboard (tải cấu hình động /integrations/config)
+    ├── contracts/core-business.openapi.yaml     # Hợp đồng OpenAPI 3.1.0 đồng bộ với Lab 02
+    ├── changelog.md                             # Nhật ký thay đổi v0.1.0 -> v0.5.0
+    ├── endpoint_catalog.md                      # Danh mục toàn bộ API, Webhook, MQTT & Integrations
+    ├── docs/architecture_one_pager.md           # Sơ đồ kiến trúc & luồng dữ liệu Core Business
+    ├── checklists/readiness-checklist.md        # Danh sách kiểm tra sẵn sàng tích hợp
+    ├── evidence/                                # Bằng chứng kiểm thử & log xác minh thực tế
+    ├── reflection/                              # Đánh giá quyết định thiết kế & hướng phát triển
+    ├── RUN_COMPOSE.md                           # Hướng dẫn chạy Mock Stack & LAN Plug-a-thon
+    └── README.md                                # Tài liệu chi tiết Lab 05
 ```
 
 ### Tóm tắt tiến trình qua từng giai đoạn:
@@ -117,7 +130,7 @@ Core_Business_Service/
 | **Lab 02** | Chuẩn hóa API Contract theo chuẩn OpenAPI 3.1.0, định nghĩa mã lỗi RFC 9457 `ProblemDetails`, cơ chế Bearer Auth. | `core-business.openapi.yaml`, đàm phán hợp đồng đa bên |
 | **Lab 03** | Xây dựng Prism Mock Server, thiết kế 24 kịch bản kiểm thử Postman bao phủ Functional, Auth, Negative, Boundary, SLA. | Postman Collection, Newman CI Reports (XML/HTML) |
 | **Lab 04** | Triển khai mã nguồn FastAPI thực tế, đóng gói Multi-stage Dockerfile, chạy non-root `appuser`, native healthcheck, 100% không hardcode. | Container `fit4110/core-business:lab04`, 100% Test Pass |
-| **Lab 05** | Tích hợp mạng lưới đa dịch vụ qua Docker Compose & Plug-a-thon toàn trường. | `docker-compose.yml`, kiểm thử tích hợp liên phân hệ |
+| **Lab 05** | Đa dịch vụ Docker Compose + PostgreSQL/In-Memory Dual Storage, Mock Stack integration, Non-blocking MQTT/Notification, Demo Pack & Plug-a-thon LAN. | [docker-compose.yml](file:///d:/Service/FIT4110_lab05_docker_compose-main/docker-compose.yml), [RUN_COMPOSE.md](file:///d:/Service/FIT4110_lab05_docker_compose-main/RUN_COMPOSE.md) |
 
 ---
 
@@ -125,21 +138,61 @@ Core_Business_Service/
 
 | Method | Endpoint | Mô tả Nghiệp vụ | Mã phản hồi |
 |---|---|---|---|
-| `GET` | `/health` | Kiểm tra trạng thái sẵn sàng (Healthcheck) của service. | `200 OK` |
-| `POST` | `/alerts` | Tạo cảnh báo bất thường mới (yêu cầu Bearer Auth Token). | `201 Created`, `401`, `422` |
+| `GET` | `/health` | Kiểm tra trạng thái sẵn sàng của service và `storage` backend (`postgres` / `memory`). | `200 OK` |
+| `POST` | `/alerts` | Tạo cảnh báo bất thường mới (Bearer `AUTH_TOKEN`), tự bắn MQTT & Notification nếu `HIGH/CRITICAL`. | `201 Created`, `401`, `422` |
 | `GET` | `/alerts` | Lấy danh sách cảnh báo (phân trang `limit` từ 1 đến 100). | `200 OK`, `422` |
-| `GET` | `/alerts/recent` | Lấy danh sách 5 cảnh báo mới nhất của Smart Campus. | `200 OK` |
+| `GET` | `/alerts/recent` | Lấy danh sách cảnh báo mới nhất của Smart Campus. | `200 OK` |
 | `GET` | `/alerts/{alert_id}` | Tra cứu chi tiết một cảnh báo theo mã UUID. | `200 OK`, `404 Not Found` |
-| `POST` | `/access/check` | Đánh giá chính sách quẹt thẻ ra/vào cổng thời gian thực. | `200 OK`, `409 Conflict`, `422` |
+| `POST` | `/alerts/{alert_id}/resolve` | Chuyển cảnh báo sang `RESOLVED` và phát MQTT `business.alert.resolved`. | `200 OK`, `404 Not Found` |
+| `POST` | `/access/check` | Đánh giá chính sách quẹt thẻ `POL-001` thời gian thực (kiểm tra cổng, khung giờ, trùng lặp `idempotencyKey`, rate-limit). | `200 OK`, `409 Conflict`, `422` |
 | `GET` | `/policies/access/{id}` | Xem chi tiết chính sách kiểm soát ra/vào (`POL-001`). | `200 OK`, `404 Not Found` |
 | `GET` | `/decisions/{id}` | Tra cứu lịch sử quyết định phục vụ kiểm toán. | `200 OK`, `404 Not Found` |
-| `POST` | `/events` | Tiếp nhận sự kiện tổng quát từ các phân hệ khác. | `201 Created` |
+| `POST` | `/events` | Tiếp nhận sự kiện cảm biến IoT / hệ thống và tự sinh Alert khi quá ngưỡng. | `201 Created` |
+| `POST` | `/vision/detection-result` | Webhook nhận kết quả phát hiện từ AI Vision Service và tự tạo Alert khi `risk_level` cao. | `200 OK`, `422` |
+| `GET` | `/integrations/status` | Ping song song toàn bộ 5 service đối tác (AI Vision, IoT, Access Gate, Analytics, Notification). | `200 OK` |
+| `POST` | `/integrations/notification/send` | Gửi thông báo cảnh báo trực tiếp qua Notification Service. | `200 OK` |
 
 ---
 
-## 4. Hướng dẫn Khởi chạy & Kiểm thử Nhanh (Quick Start với Lab 04)
+## 4. Hướng dẫn Khởi chạy & Kiểm thử Nhanh (Quick Start — Lab 05 & Lab 04)
 
-Bất kỳ máy nào khi `git clone` repository này về đều có thể chạy và kiểm thử ngay lập tức theo các bước sau:
+### A. Chạy Stack Hoàn chỉnh Lab 05 (Docker Compose + PostgreSQL + 5 Mock Services)
+
+```powershell
+cd FIT4110_lab05_docker_compose-main
+Copy-Item .env.example .env -ErrorAction SilentlyContinue
+npm install
+
+# Kiểm tra hợp đồng OpenAPI & cú pháp Docker Compose
+npm run lint:openapi
+npm run lint:compose
+
+# Khởi chạy Core Business (:8001), PostgreSQL (:5433) và 5 Mock Services (:9001..9005)
+docker compose -f docker-compose.yml -f docker-compose.mock.yml --profile mock up -d --build --wait
+
+# Kiểm tra /health & trạng thái tích hợp 5 đối tác
+curl http://localhost:8001/health
+curl http://localhost:8001/integrations/status
+
+# Mở Live Operations Dashboard
+Start-Process http://localhost:8001/dashboard
+
+# Chạy kiểm thử tự động Newman (sinh reports/newman-lab05-compose.html & .xml)
+npm run test:compose
+
+# Dừng hệ thống
+docker compose -f docker-compose.yml -f docker-compose.mock.yml --profile mock down
+```
+
+> **Chuyển đổi kiểu lưu trữ (`Dual Storage`)**: Đặt `STORAGE_BACKEND=postgres` (PostgreSQL bền vững) hoặc `STORAGE_BACKEND=memory` (lưu tạm trên RAM) trong `.env`, hoặc mở comment tương ứng tại `create_store()` trong [storage.py](file:///d:/Service/FIT4110_lab05_docker_compose-main/src/core_app/storage.py).
+
+> Xem thêm tài liệu Demo Pack Lab 05: [architecture_one_pager.md](file:///d:/Service/FIT4110_lab05_docker_compose-main/docs/architecture_one_pager.md) | [endpoint_catalog.md](file:///d:/Service/FIT4110_lab05_docker_compose-main/endpoint_catalog.md) | [changelog.md](file:///d:/Service/FIT4110_lab05_docker_compose-main/changelog.md) | [reflection/README.md](file:///d:/Service/FIT4110_lab05_docker_compose-main/reflection/README.md).
+
+---
+
+### B. Kiểm thử nhanh Container đơn lẻ Lab 04
+
+Bất kỳ máy nào khi `git clone` repository này về đều có thể chạy và kiểm thử nhanh Lab 04 như sau:
 
 ### Bước 1: Di chuyển vào thư mục Lab 04 & Cài phụ thuộc test
 ```bash

@@ -25,17 +25,32 @@ services:
       dockerfile: Dockerfile
     container_name: smartcampus-core-service
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       APP_HOST: 0.0.0.0
       APP_PORT: 8000
+      SERVICE_NAME: ${SERVICE_NAME:-core-business}
+      SERVICE_VERSION: ${SERVICE_VERSION:-0.5.0}
+      AUTH_TOKEN: ${AUTH_TOKEN:-mock-core-token-2026}
+      ENV: ${ENV:-lan}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-postgres}
+      STORAGE_FALLBACK_MEMORY: ${STORAGE_FALLBACK_MEMORY:-false}
       AI_VISION_URL: ${AI_VISION_URL:-http://192.168.1.41:8000}
       AI_VISION_AUTH_TOKEN: ${AI_VISION_AUTH_TOKEN:-local-dev-token-vision}
       IOT_SERVICE_URL: ${IOT_SERVICE_URL:-http://192.168.1.11:8000}
       GATE_SERVICE_URL: ${GATE_SERVICE_URL:-http://192.168.1.31:8000}
       GATE_AUTH_TOKEN: ${GATE_AUTH_TOKEN:-dev-secret-token}
       ANALYTICS_SERVICE_URL: ${ANALYTICS_SERVICE_URL:-http://192.168.1.51:8000}
+      MQTT_BROKER_HOST: ${MQTT_BROKER_HOST:-192.168.1.51}
+      MQTT_BROKER_PORT: ${MQTT_BROKER_PORT:-1883}
+      MQTT_TOPIC_BUSINESS_EVENTS: ${MQTT_TOPIC_BUSINESS_EVENTS:-business.events}
       NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL:-http://192.168.1.61:8000}
+      TEMP_HIGH_THRESHOLD: ${TEMP_HIGH_THRESHOLD:-40.0}
+      TEMP_CRITICAL_THRESHOLD: ${TEMP_CRITICAL_THRESHOLD:-50.0}
+      ACCESS_RATE_LIMIT_MAX: ${ACCESS_RATE_LIMIT_MAX:-10}
+      ENFORCE_TIME_WINDOW: ${ENFORCE_TIME_WINDOW:-true}
+      BLACKLISTED_CARDS: ${BLACKLISTED_CARDS:-RFID-2026-999}
       DATABASE_URL: postgresql://${POSTGRES_USER:-lab05}:${POSTGRES_PASSWORD:-lab05pass}@db:5432/${POSTGRES_DB:-coredb}
     depends_on:
       db:

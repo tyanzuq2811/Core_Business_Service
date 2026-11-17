@@ -1,109 +1,131 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="FIT4110 Lab05 - Core Business Stack (LAN Plug-a-thon)" tests="29" time="24.383">
-  <testsuite name="00_Health / GET /health - Check service status" id="7de16244-1ab3-40a1-8a6f-bd815923f042" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.050">
-    <testcase name="Status code is 200" time="0.050" classname="00HealthGetHealthCheckServiceStatus"/>
-    <testcase name="Response has service status ok" time="0.050" classname="00HealthGetHealthCheckServiceStatus"/>
+<testsuites name="FIT4110 Lab05 - Core Business Stack (LAN Plug-a-thon)" tests="34" time="0.542">
+  <testsuite name="00_Health / GET /health - Check service status" id="9acf8b03-2bb1-4ead-b24e-e99830e478c6" timestamp="2026-11-11T17:19:44.122Z" tests="3" failures="0" errors="0" time="0.042">
+    <testcase name="Status code is 200" time="0.042" classname="00HealthGetHealthCheckServiceStatus"/>
+    <testcase name="Response has service status ok" time="0.042" classname="00HealthGetHealthCheckServiceStatus"/>
+    <testcase name="Health reports active storage backend" time="0.042" classname="00HealthGetHealthCheckServiceStatus"/>
   </testsuite>
-  <testsuite name="01_Functional / POST /alerts - Create alert (Happy path)" id="d9d4ed62-25e8-48c1-93cc-c3cf141d48f7" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.029">
-    <testcase name="Status code is 201" time="0.029" classname="01FunctionalPostAlertsCreateAlertHappyPath"/>
-    <testcase name="Response contains created alert details" time="0.029" classname="01FunctionalPostAlertsCreateAlertHappyPath"/>
+  <testsuite name="01_Functional / POST /alerts - Create alert (Happy path)" id="137da485-7744-47a2-b482-46c2a86e89ca" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.025">
+    <testcase name="Status code is 201" time="0.025" classname="01FunctionalPostAlertsCreateAlertHappyPath"/>
+    <testcase name="Response contains created alert details" time="0.025" classname="01FunctionalPostAlertsCreateAlertHappyPath"/>
   </testsuite>
-  <testsuite name="01_Functional / GET /alerts - List alerts with pagination" id="6cb65079-e29a-4cea-b7fb-4cbd0588113c" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.007">
-    <testcase name="Status code is 200" time="0.007" classname="01FunctionalGetAlertsListAlertsWithPagination"/>
-    <testcase name="Response contains items array and pagination info" time="0.007" classname="01FunctionalGetAlertsListAlertsWithPagination"/>
+  <testsuite name="01_Functional / GET /alerts - List alerts with pagination" id="e1d39eb7-e601-4f0a-be83-2f36cde2efbc" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.021">
+    <testcase name="Status code is 200" time="0.021" classname="01FunctionalGetAlertsListAlertsWithPagination"/>
+    <testcase name="Response contains items array and pagination info" time="0.021" classname="01FunctionalGetAlertsListAlertsWithPagination"/>
   </testsuite>
-  <testsuite name="01_Functional / GET /alerts/recent - Get recent alerts" id="3967a84e-9142-4600-a1cb-d5662067922c" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.005">
-    <testcase name="Status code is 200" time="0.005" classname="01FunctionalGetAlertsRecentGetRecentAlerts"/>
-    <testcase name="Response contains items array" time="0.005" classname="01FunctionalGetAlertsRecentGetRecentAlerts"/>
+  <testsuite name="01_Functional / GET /alerts/recent - Get recent alerts" id="8470b7b4-e652-445e-b8be-b5d14df45070" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.017">
+    <testcase name="Status code is 200" time="0.017" classname="01FunctionalGetAlertsRecentGetRecentAlerts"/>
+    <testcase name="Response contains items array" time="0.017" classname="01FunctionalGetAlertsRecentGetRecentAlerts"/>
   </testsuite>
-  <testsuite name="01_Functional / GET /alerts/{alertId} - Get alert detail by ID" id="b4acb48b-fed4-46e3-9eac-1d18dadc93f3" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.007">
-    <testcase name="Status code is 200" time="0.007" classname="01FunctionalGetAlertsAlertIdGetAlertDetailById"/>
-    <testcase name="Response contains alert object" time="0.007" classname="01FunctionalGetAlertsAlertIdGetAlertDetailById"/>
+  <testsuite name="01_Functional / GET /alerts/{alertId} - Get alert detail by ID" id="3a72dacd-49bc-46ab-a372-436c7aeb5e82" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.014">
+    <testcase name="Status code is 200" time="0.014" classname="01FunctionalGetAlertsAlertIdGetAlertDetailById"/>
+    <testcase name="Response contains alert object" time="0.014" classname="01FunctionalGetAlertsAlertIdGetAlertDetailById"/>
   </testsuite>
-  <testsuite name="01_Functional / POST /access/check - Check realtime access policy" id="42536439-3f86-4b68-a3cb-76695162938a" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.011">
-    <testcase name="Status code is 200" time="0.011" classname="01FunctionalPostAccessCheckCheckRealtimeAccessPolicy"/>
-    <testcase name="Response contains access decision" time="0.011" classname="01FunctionalPostAccessCheckCheckRealtimeAccessPolicy"/>
+  <testsuite name="01_Functional / POST /access/check - Check realtime access policy" id="e66f147d-8eb4-4e97-ba7d-2643f9e6b9bd" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.052">
+    <testcase name="Status code is 200" time="0.052" classname="01FunctionalPostAccessCheckCheckRealtimeAccessPolicy"/>
+    <testcase name="Valid card at GATE-01 in working hours returns ALLOW" time="0.052" classname="01FunctionalPostAccessCheckCheckRealtimeAccessPolicy"/>
   </testsuite>
-  <testsuite name="01_Functional / GET /policies/access/{policyId} - Get access policy detail" id="c2ad3a73-37a4-4d59-a6eb-eefecb931f25" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.006">
-    <testcase name="Status code is 200" time="0.006" classname="01FunctionalGetPoliciesAccessPolicyIdGetAccessPolicyDetail"/>
-    <testcase name="Response contains policy details" time="0.006" classname="01FunctionalGetPoliciesAccessPolicyIdGetAccessPolicyDetail"/>
+  <testsuite name="01_Functional / GET /policies/access/{policyId} - Get access policy detail" id="896354e7-bc07-43d5-a50a-ed323aa0b5e7" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.012">
+    <testcase name="Status code is 200" time="0.012" classname="01FunctionalGetPoliciesAccessPolicyIdGetAccessPolicyDetail"/>
+    <testcase name="Response contains policy details" time="0.012" classname="01FunctionalGetPoliciesAccessPolicyIdGetAccessPolicyDetail"/>
   </testsuite>
-  <testsuite name="01_Functional / GET /decisions/{decisionId} - Get decision audit record" id="9d10fb19-85ee-40fc-82ea-f9c2b4eeb79c" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.006">
-    <testcase name="Status code is 200" time="0.006" classname="01FunctionalGetDecisionsDecisionIdGetDecisionAuditRecord"/>
-    <testcase name="Response contains decision audit info" time="0.006" classname="01FunctionalGetDecisionsDecisionIdGetDecisionAuditRecord"/>
+  <testsuite name="01_Functional / GET /decisions/{decisionId} - Get decision audit record" id="0a96ab69-d855-421e-8983-82e2a1d80000" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.014">
+    <testcase name="Status code is 200" time="0.014" classname="01FunctionalGetDecisionsDecisionIdGetDecisionAuditRecord"/>
+    <testcase name="Response contains decision audit info" time="0.014" classname="01FunctionalGetDecisionsDecisionIdGetDecisionAuditRecord"/>
   </testsuite>
-  <testsuite name="01_Functional / POST /events - Ingest campus event" id="2a535436-294e-463b-952f-9e13f88eda11" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.014">
-    <testcase name="Status code is 201" time="0.014" classname="01FunctionalPostEventsIngestCampusEvent"/>
-    <testcase name="Response confirms event accepted" time="0.014" classname="01FunctionalPostEventsIngestCampusEvent"/>
+  <testsuite name="01_Functional / POST /events - Ingest campus event" id="89a66ac5-1253-482d-ab0e-6c1f229ee0cb" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.016">
+    <testcase name="Status code is 201" time="0.016" classname="01FunctionalPostEventsIngestCampusEvent"/>
+    <testcase name="Response confirms event accepted" time="0.016" classname="01FunctionalPostEventsIngestCampusEvent"/>
   </testsuite>
-  <testsuite name="02_Auth / GET /alerts - Valid token is accepted" id="b85eca83-4e99-4546-b3b1-9e55faed17f1" timestamp="2026-08-27T09:36:50.560Z" tests="1" failures="0" errors="0" time="0.006">
-    <testcase name="Valid token request returns 200" time="0.006" classname="02AuthGetAlertsValidTokenIsAccepted"/>
+  <testsuite name="01_Functional / POST /access/check - DENY unauthorized gate (POL-001)" id="41ef84dd-6b35-4fd2-a826-86c4f673e1be" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.062">
+    <testcase name="Status code is 200" time="0.062" classname="01FunctionalPostAccessCheckDenyUnauthorizedGatePol001"/>
+    <testcase name="Disallowed gate GATE-99 returns DENY / POLICY_DENY" time="0.062" classname="01FunctionalPostAccessCheckDenyUnauthorizedGatePol001"/>
   </testsuite>
-  <testsuite name="02_Auth / POST /alerts - Missing token rejected on real service" id="20d3b256-f399-4291-b543-7f5ae8948192" timestamp="2026-08-27T09:36:50.560Z" tests="1" failures="0" errors="0" time="0.012">
-    <testcase name="Missing token returns 401 or 403" time="0.012" classname="02AuthPostAlertsMissingTokenRejectedOnRealService"/>
+  <testsuite name="01_Functional / POST /alerts/{alertId}/resolve - Resolve created alert" id="5b9a9c99-a97e-4256-a1e3-96462e2203f9" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.020">
+    <testcase name="Status code is 200" time="0.020" classname="01FunctionalPostAlertsAlertIdResolveResolveCreatedAlert"/>
+    <testcase name="Alert transitioned to RESOLVED with timestamp" time="0.020" classname="01FunctionalPostAlertsAlertIdResolveResolveCreatedAlert"/>
   </testsuite>
-  <testsuite name="02_Auth / POST /alerts - Invalid token rejected on real service" id="dfd3e7c0-7689-47db-837e-3a7f989c26c9" timestamp="2026-08-27T09:36:50.560Z" tests="1" failures="0" errors="0" time="0.008">
-    <testcase name="Invalid token returns 401 or 403" time="0.008" classname="02AuthPostAlertsInvalidTokenRejectedOnRealService"/>
+  <testsuite name="01_Functional / POST /vision/detection-result - Webhook risk HIGH creates Alert" id="9e1044a7-3c92-438f-93a2-5bfb3c02dcf1" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.027">
+    <testcase name="Status code is 200" time="0.027" classname="01FunctionalPostVisionDetectionResultWebhookRiskHighCreatesAlert"/>
+    <testcase name="HIGH risk detection creates alert automatically" time="0.027" classname="01FunctionalPostVisionDetectionResultWebhookRiskHighCreatesAlert"/>
   </testsuite>
-  <testsuite name="03_Negative / POST /alerts - Missing required field (ProblemDetails)" id="ece55967-6b0c-4d3f-8cd8-0d76d82aaa2a" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.033">
-    <testcase name="Invalid payload returns client error 400 or 422" time="0.033" classname="03NegativePostAlertsMissingRequiredFieldProblemDetails"/>
-    <testcase name="Error response follows ProblemDetails schema" time="0.033" classname="03NegativePostAlertsMissingRequiredFieldProblemDetails"/>
+  <testsuite name="01_Functional / POST /events - High temperature triggers Alert" id="ca1175fe-4743-4413-9e16-89eb32fb6cb1" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.027">
+    <testcase name="Status code is 201" time="0.027" classname="01FunctionalPostEventsHighTemperatureTriggersAlert"/>
+    <testcase name="Overheat event accepted" time="0.027" classname="01FunctionalPostEventsHighTemperatureTriggersAlert"/>
   </testsuite>
-  <testsuite name="03_Negative / POST /access/check - Invalid cardId pattern" id="85094c4c-8f2b-4214-b567-b0f9632bfc7d" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.007">
-    <testcase name="Pattern mismatch returns client error 400 or 422" time="0.007" classname="03NegativePostAccessCheckInvalidCardIdPattern"/>
-    <testcase name="ProblemDetails contains error detail" time="0.007" classname="03NegativePostAccessCheckInvalidCardIdPattern"/>
+  <testsuite name="02_Auth / GET /alerts - Valid token is accepted" id="22a10a60-f73f-4d41-a8e8-3019eb6d91ad" timestamp="2026-11-11T17:19:44.122Z" tests="1" failures="0" errors="0" time="0.013">
+    <testcase name="Valid token request returns 200" time="0.013" classname="02AuthGetAlertsValidTokenIsAccepted"/>
   </testsuite>
-  <testsuite name="03_Negative / GET /alerts/{alertId} - Non-existent UUID (404)" id="9e0962ff-c8bf-4ecb-b96f-13f39d1a8796" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.005">
-    <testcase name="Non-existent resource returns 404" time="0.005" classname="03NegativeGetAlertsAlertIdNonExistentUuid404"/>
-    <testcase name="ProblemDetails status field is client error (400-499)" time="0.005" classname="03NegativeGetAlertsAlertIdNonExistentUuid404"/>
+  <testsuite name="02_Auth / POST /alerts - Missing token rejected on real service" id="34267345-5b7f-4cf7-ba5a-14c866039b79" timestamp="2026-11-11T17:19:44.122Z" tests="1" failures="0" errors="0" time="0.003">
+    <testcase name="Missing token returns 401 or 403" time="0.003" classname="02AuthPostAlertsMissingTokenRejectedOnRealService"/>
   </testsuite>
-  <testsuite name="03_Negative / POST /access/check - Idempotency collision (409 Conflict)" id="e857da18-b760-4df4-b8be-2f004a3ca074" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.009">
-    <testcase name="Idempotency collision returns 409 Conflict" time="0.009" classname="03NegativePostAccessCheckIdempotencyCollision409Conflict"/>
-    <testcase name="ProblemDetails status is 409" time="0.009" classname="03NegativePostAccessCheckIdempotencyCollision409Conflict"/>
+  <testsuite name="02_Auth / POST /alerts - Invalid token rejected on real service" id="26f3e495-539a-4af4-84a6-250790a233ef" timestamp="2026-11-11T17:19:44.122Z" tests="1" failures="0" errors="0" time="0.003">
+    <testcase name="Invalid token returns 401 or 403" time="0.003" classname="02AuthPostAlertsInvalidTokenRejectedOnRealService"/>
   </testsuite>
-  <testsuite name="03_Negative / GET /policies/access/{policyId} - Policy not found (404)" id="ce53fb1b-36cc-44b5-896d-dd8f194f6046" timestamp="2026-08-27T09:36:50.560Z" tests="1" failures="0" errors="0" time="0.004">
-    <testcase name="Policy non-existent returns client error 404 or 422" time="0.004" classname="03NegativeGetPoliciesAccessPolicyIdPolicyNotFound404"/>
+  <testsuite name="03_Negative / POST /alerts - Missing required field (ProblemDetails)" id="c8bcc84c-2671-4848-8a88-b70ec4e2c974" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.003">
+    <testcase name="Invalid payload returns client error 400 or 422" time="0.003" classname="03NegativePostAlertsMissingRequiredFieldProblemDetails"/>
+    <testcase name="Error response follows ProblemDetails schema" time="0.003" classname="03NegativePostAlertsMissingRequiredFieldProblemDetails"/>
   </testsuite>
-  <testsuite name="03_Negative / POST /access/check - Invalid direction enum (422)" id="04ec80db-dd55-4697-bbab-569f3440afec" timestamp="2026-08-27T09:36:50.560Z" tests="1" failures="0" errors="0" time="0.006">
-    <testcase name="Invalid enum value returns 400 or 422" time="0.006" classname="03NegativePostAccessCheckInvalidDirectionEnum422"/>
+  <testsuite name="03_Negative / POST /access/check - Invalid cardId pattern" id="d2fc713f-3212-439d-be74-a6fa017f8b6d" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.003">
+    <testcase name="Pattern mismatch returns client error 400 or 422" time="0.003" classname="03NegativePostAccessCheckInvalidCardIdPattern"/>
+    <testcase name="ProblemDetails contains error detail" time="0.003" classname="03NegativePostAccessCheckInvalidCardIdPattern"/>
   </testsuite>
-  <testsuite name="03_Negative / POST /alerts - Simulated 500 Internal Server Error" id="56e27c64-5f4c-4f09-80dd-50d86b9e0757" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="0.007">
-    <testcase name="Server error returns 500" time="0.007" classname="03NegativePostAlertsSimulated500InternalServerError"/>
-    <testcase name="ProblemDetails status is 500" time="0.007" classname="03NegativePostAlertsSimulated500InternalServerError"/>
+  <testsuite name="03_Negative / GET /alerts/{alertId} - Non-existent UUID (404)" id="23e28501-df41-458d-9a99-aa344faa56f1" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.003">
+    <testcase name="Non-existent resource returns 404" time="0.003" classname="03NegativeGetAlertsAlertIdNonExistentUuid404"/>
+    <testcase name="ProblemDetails status field is client error (400-499)" time="0.003" classname="03NegativeGetAlertsAlertIdNonExistentUuid404"/>
   </testsuite>
-  <testsuite name="04_Boundary_Reliability / GET /alerts - Boundary min limit=1" id="49086d0e-c292-4fa4-86e2-36ea14cd1764" timestamp="2026-08-27T09:36:50.560Z" tests="1" failures="0" errors="0" time="0.006">
-    <testcase name="Min boundary limit=1 returns 200" time="0.006" classname="04BoundaryReliabilityGetAlertsBoundaryMinLimit1"/>
+  <testsuite name="03_Negative / POST /access/check - Idempotency collision (409 Conflict)" id="4766ba8f-2783-4f5f-84be-f98fd5f4d368" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.017">
+    <testcase name="Idempotency collision returns 409 Conflict" time="0.017" classname="03NegativePostAccessCheckIdempotencyCollision409Conflict"/>
+    <testcase name="ProblemDetails status is 409" time="0.017" classname="03NegativePostAccessCheckIdempotencyCollision409Conflict"/>
   </testsuite>
-  <testsuite name="04_Boundary_Reliability / GET /alerts - Boundary max limit=100" id="7292b90b-88b5-458c-ad33-a52e67cc4075" timestamp="2026-08-27T09:36:50.560Z" tests="1" failures="0" errors="0" time="0.005">
-    <testcase name="Max boundary limit=100 returns 200" time="0.005" classname="04BoundaryReliabilityGetAlertsBoundaryMaxLimit100"/>
+  <testsuite name="03_Negative / GET /policies/access/{policyId} - Policy not found (404)" id="eacb0599-da94-478d-a28e-db12709990ae" timestamp="2026-11-11T17:19:44.122Z" tests="1" failures="0" errors="0" time="0.003">
+    <testcase name="Policy non-existent returns client error 404 or 422" time="0.003" classname="03NegativeGetPoliciesAccessPolicyIdPolicyNotFound404"/>
   </testsuite>
-  <testsuite name="04_Boundary_Reliability / GET /alerts - Limit=101 out of range" id="4b3dee6a-4071-4e0a-ac03-abf331ed5294" timestamp="2026-08-27T09:36:50.560Z" tests="1" failures="0" errors="0" time="0.004">
-    <testcase name="Out-of-bound limit=101 returns client error 400 or 422" time="0.004" classname="04BoundaryReliabilityGetAlertsLimit101OutOfRange"/>
+  <testsuite name="03_Negative / POST /access/check - Invalid direction enum (422)" id="00d3f1d0-6b03-4779-a6ad-230679ac265d" timestamp="2026-11-11T17:19:44.122Z" tests="1" failures="0" errors="0" time="0.003">
+    <testcase name="Invalid enum value returns 400 or 422" time="0.003" classname="03NegativePostAccessCheckInvalidDirectionEnum422"/>
   </testsuite>
-  <testsuite name="05_Consumer_side_Smoke / Core calls AI Vision mock - /vision/face-match" id="3c3e0c9d-f8a3-4cbb-9238-4257fa6fcc93" timestamp="2026-08-27T09:36:50.560Z" tests="1" failures="0" errors="0" time="0.005">
-    <testcase name="Consumer service health check returns 200" time="0.005" classname="05ConsumerSideSmokeCoreCallsAiVisionMockVisionFaceMatch"/>
+  <testsuite name="03_Negative / POST /alerts - Simulated 500 Internal Server Error" id="88dae264-5ec6-4a7f-aed6-d19166f6bb18" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.003">
+    <testcase name="Server error returns 500" time="0.003" classname="03NegativePostAlertsSimulated500InternalServerError"/>
+    <testcase name="ProblemDetails status is 500" time="0.003" classname="03NegativePostAlertsSimulated500InternalServerError"/>
   </testsuite>
-  <testsuite name="06_Local_only_NonFunctional / POST /access/check - Response time under 200ms SLA" id="88f60cc9-8797-4f93-af34-5c315bc308f3" timestamp="2026-08-27T09:36:50.560Z" tests="1" failures="0" errors="0" time="0.007">
-    <testcase name="Skipped on mock: mock latency is not evidence of real SLA" time="0.007" classname="06LocalOnlyNonFunctionalPostAccessCheckResponseTimeUnder200MsSla"/>
+  <testsuite name="04_Boundary_Reliability / GET /alerts - Boundary min limit=1" id="4fb20737-f87a-49b0-9b1b-5c41a6896bcc" timestamp="2026-11-11T17:19:44.122Z" tests="1" failures="0" errors="0" time="0.011">
+    <testcase name="Min boundary limit=1 returns 200" time="0.011" classname="04BoundaryReliabilityGetAlertsBoundaryMinLimit1"/>
   </testsuite>
-  <testsuite name="07_Plug_a_thon_LAN_Integrations / GET /integrations/status - Dashboard quét toàn mạng LAN" id="5c9f4b64-e5ea-41e4-97aa-dc496a9e2da8" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="10.959">
-    <testcase name="Status code is 200" time="10.959" classname="07PlugAThonLanIntegrationsGetIntegrationsStatusDashboardQuetToanMngLan"/>
-    <testcase name="Response has summary and partners" time="10.959" classname="07PlugAThonLanIntegrationsGetIntegrationsStatusDashboardQuetToanMngLan"/>
+  <testsuite name="04_Boundary_Reliability / GET /alerts - Boundary max limit=100" id="9dc8eba6-d208-41f7-b70d-ac2dc3d79d9b" timestamp="2026-11-11T17:19:44.122Z" tests="1" failures="0" errors="0" time="0.012">
+    <testcase name="Max boundary limit=100 returns 200" time="0.012" classname="04BoundaryReliabilityGetAlertsBoundaryMaxLimit100"/>
   </testsuite>
-  <testsuite name="07_Plug_a_thon_LAN_Integrations / GET /integrations/gate/cards/{cardId} - Tra cứu thẻ bên Access Gate" id="4936846c-4586-46e6-b99f-e95df934b078" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="3.284">
-    <testcase name="Status code is 200" time="3.284" classname="07PlugAThonLanIntegrationsGetIntegrationsGateCardsCardIdTraCuThBenAccessGate"/>
-    <testcase name="Card query response is valid" time="3.284" classname="07PlugAThonLanIntegrationsGetIntegrationsGateCardsCardIdTraCuThBenAccessGate"/>
+  <testsuite name="04_Boundary_Reliability / GET /alerts - Limit=101 out of range" id="fdc6e958-b7f3-42c8-a50f-38f1207b9dc2" timestamp="2026-11-11T17:19:44.122Z" tests="1" failures="0" errors="0" time="0.002">
+    <testcase name="Out-of-bound limit=101 returns client error 400 or 422" time="0.002" classname="04BoundaryReliabilityGetAlertsLimit101OutOfRange"/>
   </testsuite>
-  <testsuite name="07_Plug_a_thon_LAN_Integrations / GET /integrations/ai-vision/models - Xem model YOLOv8 của AI Vision" id="45840536-3504-44ba-910b-d566be31bf28" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="3.281">
-    <testcase name="Status code is 200" time="3.281" classname="07PlugAThonLanIntegrationsGetIntegrationsAiVisionModelsXemModelYolOv8CaAiVision"/>
-    <testcase name="AI Vision model info response is valid" time="3.281" classname="07PlugAThonLanIntegrationsGetIntegrationsAiVisionModelsXemModelYolOv8CaAiVision"/>
+  <testsuite name="05_Consumer_side_Smoke / Core calls AI Vision mock - POST /integrations/ai-vision/face-match" id="59463b78-ec64-4a76-a943-a322e84d62ba" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.011">
+    <testcase name="Status code is 200" time="0.011" classname="05ConsumerSideSmokeCoreCallsAiVisionMockPostIntegrationsAiVisionFaceMatch"/>
+    <testcase name="AI Vision mock returns MATCHED" time="0.011" classname="05ConsumerSideSmokeCoreCallsAiVisionMockPostIntegrationsAiVisionFaceMatch"/>
   </testsuite>
-  <testsuite name="07_Plug_a_thon_LAN_Integrations / POST /integrations/ai-vision/face-match - So khớp khuôn mặt AI Vision" id="2fd5891a-41fb-4a57-8463-a7bedb308d3b" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="4.406">
-    <testcase name="Status code is 200" time="4.406" classname="07PlugAThonLanIntegrationsPostIntegrationsAiVisionFaceMatchSoKhpKhuonMtAiVision"/>
-    <testcase name="Face match evaluated response is valid" time="4.406" classname="07PlugAThonLanIntegrationsPostIntegrationsAiVisionFaceMatchSoKhpKhuonMtAiVision"/>
+  <testsuite name="06_Local_only_NonFunctional / POST /access/check - Response time under 200ms SLA" id="e3a00308-4c2e-4fa8-85e9-b6a35544d7c6" timestamp="2026-11-11T17:19:44.122Z" tests="1" failures="0" errors="0" time="0.044">
+    <testcase name="Local service responds under 200ms SLA" time="0.044" classname="06LocalOnlyNonFunctionalPostAccessCheckResponseTimeUnder200MsSla"/>
   </testsuite>
-  <testsuite name="07_Plug_a_thon_LAN_Integrations / GET /integrations/analytics/health - Kiểm tra kết nối Analytics" id="d445212d-c701-4485-b026-4635ffdf54ec" timestamp="2026-08-27T09:36:50.560Z" tests="2" failures="0" errors="0" time="2.194">
-    <testcase name="Status code is 200" time="2.194" classname="07PlugAThonLanIntegrationsGetIntegrationsAnalyticsHealthKimTraKtNiAnalytics"/>
-    <testcase name="Analytics health check response is valid" time="2.194" classname="07PlugAThonLanIntegrationsGetIntegrationsAnalyticsHealthKimTraKtNiAnalytics"/>
+  <testsuite name="07_Plug_a_thon_LAN_Integrations / GET /integrations/status - Dashboard quét toàn mạng LAN" id="05eb3e45-c4ad-4184-8983-df0d8dd7f6e5" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.010">
+    <testcase name="Status code is 200" time="0.010" classname="07PlugAThonLanIntegrationsGetIntegrationsStatusDashboardQuetToanMngLan"/>
+    <testcase name="All 5 mock partners ONLINE in local compose mode" time="0.010" classname="07PlugAThonLanIntegrationsGetIntegrationsStatusDashboardQuetToanMngLan"/>
+  </testsuite>
+  <testsuite name="07_Plug_a_thon_LAN_Integrations / GET /integrations/gate/cards/{cardId} - Tra cứu thẻ bên Access Gate" id="85231542-0b58-44d6-9369-b6fab21825ca" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.010">
+    <testcase name="Status code is 200" time="0.010" classname="07PlugAThonLanIntegrationsGetIntegrationsGateCardsCardIdTraCuThBenAccessGate"/>
+    <testcase name="Partner call succeeds in local mock mode" time="0.010" classname="07PlugAThonLanIntegrationsGetIntegrationsGateCardsCardIdTraCuThBenAccessGate"/>
+  </testsuite>
+  <testsuite name="07_Plug_a_thon_LAN_Integrations / GET /integrations/ai-vision/models - Xem model YOLOv8 của AI Vision" id="f1d78f6b-1aa4-4dca-a082-002cdff58e80" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.010">
+    <testcase name="Status code is 200" time="0.010" classname="07PlugAThonLanIntegrationsGetIntegrationsAiVisionModelsXemModelYolOv8CaAiVision"/>
+    <testcase name="Partner call succeeds in local mock mode" time="0.010" classname="07PlugAThonLanIntegrationsGetIntegrationsAiVisionModelsXemModelYolOv8CaAiVision"/>
+  </testsuite>
+  <testsuite name="07_Plug_a_thon_LAN_Integrations / POST /integrations/ai-vision/face-match - So khớp khuôn mặt AI Vision" id="0f1e7403-0cee-4fe5-b182-5daea61575fa" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.009">
+    <testcase name="Status code is 200" time="0.009" classname="07PlugAThonLanIntegrationsPostIntegrationsAiVisionFaceMatchSoKhpKhuonMtAiVision"/>
+    <testcase name="Partner call succeeds in local mock mode" time="0.009" classname="07PlugAThonLanIntegrationsPostIntegrationsAiVisionFaceMatchSoKhpKhuonMtAiVision"/>
+  </testsuite>
+  <testsuite name="07_Plug_a_thon_LAN_Integrations / GET /integrations/analytics/health - Kiểm tra kết nối Analytics" id="aa194d28-39a7-480f-aeea-b880b8b0f4fd" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.009">
+    <testcase name="Status code is 200" time="0.009" classname="07PlugAThonLanIntegrationsGetIntegrationsAnalyticsHealthKimTraKtNiAnalytics"/>
+    <testcase name="Analytics health ONLINE in local mock mode" time="0.009" classname="07PlugAThonLanIntegrationsGetIntegrationsAnalyticsHealthKimTraKtNiAnalytics"/>
+  </testsuite>
+  <testsuite name="07_Plug_a_thon_LAN_Integrations / POST /integrations/notification/send - Gửi cảnh báo sang Notification" id="62a26c42-a33b-430a-90e2-e25c97550f76" timestamp="2026-11-11T17:19:44.122Z" tests="2" failures="0" errors="0" time="0.011">
+    <testcase name="Status code is 200" time="0.011" classname="07PlugAThonLanIntegrationsPostIntegrationsNotificationSendGiCnhBaoSangNotification"/>
+    <testcase name="Notification delivered in local mock mode" time="0.011" classname="07PlugAThonLanIntegrationsPostIntegrationsNotificationSendGiCnhBaoSangNotification"/>
   </testsuite>
 </testsuites>

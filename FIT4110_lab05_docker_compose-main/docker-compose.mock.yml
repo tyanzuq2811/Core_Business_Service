@@ -1,0 +1,28 @@
+# ================================================================
+# Compose Override for Full Local Mock Stack Integration
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.mock.yml --profile mock up -d --build
+# ================================================================
+
+services:
+  api:
+    environment:
+      ENV: local
+      AI_VISION_URL: http://ai-vision-mock:9000
+      IOT_SERVICE_URL: http://iot-mock:9000
+      GATE_SERVICE_URL: http://gate-mock:9000
+      ANALYTICS_SERVICE_URL: http://analytics-mock:9000
+      NOTIFICATION_SERVICE_URL: http://notify-mock:9000
+    depends_on:
+      db:
+        condition: service_healthy
+      ai-vision-mock:
+        condition: service_started
+      iot-mock:
+        condition: service_started
+      gate-mock:
+        condition: service_started
+      analytics-mock:
+        condition: service_started
+      notify-mock:
+        condition: service_started

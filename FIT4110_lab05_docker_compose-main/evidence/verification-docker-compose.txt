@@ -1,0 +1,217 @@
+Command exited with code 0.
+
+Command output:
+NAME                         IMAGE                                              COMMAND                  SERVICE          CREATED          STATUS                    PORTS
+smartcampus-ai-mock          fit4110_lab05_docker_compose-main-ai-vision-mock   "python main.py"         ai-vision-mock   30 seconds ago   Up 45 seconds             0.0.0.0:9001->9000/tcp, [::]:9001->9000/tcp
+smartcampus-analytics-mock   fit4110_lab05_docker_compose-main-analytics-mock   "python main.py"         analytics-mock   30 seconds ago   Up 45 seconds             0.0.0.0:9004->9000/tcp, [::]:9004->9000/tcp
+smartcampus-core-db          postgres:15-alpine                                 "docker-entrypoint.s…"   db               2 months ago     Up 45 seconds (healthy)   0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp
+smartcampus-core-service     fit4110_lab05_docker_compose-main-api              "sh -c 'uvicorn core…"   api              29 seconds ago   Up 16 seconds (healthy)   0.0.0.0:8001->8000/tcp, [::]:8001->8000/tcp
+smartcampus-gate-mock        fit4110_lab05_docker_compose-main-gate-mock        "python main.py"         gate-mock        29 seconds ago   Up 45 seconds             0.0.0.0:9003->9000/tcp, [::]:9003->9000/tcp
+smartcampus-iot-mock         fit4110_lab05_docker_compose-main-iot-mock         "python main.py"         iot-mock         29 seconds ago   Up 45 seconds             0.0.0.0:9002->9000/tcp, [::]:9002->9000/tcp
+smartcampus-notify-mock      fit4110_lab05_docker_compose-main-notify-mock      "python main.py"         notify-mock      30 seconds ago   Up 45 seconds             0.0.0.0:9005->9000/tcp, [::]:9005->9000/tcp
+{"status":"ok","service":"core-business","version":"0.5.0","storage":"postgres","time":"2026-11-11T17:19:56.986984+00:00"}
+{"summary":{"coreBusinessVersion":"0.5.0","storageBackend":"postgres","totalPartners":5,"onlinePartners":5,"offlinePartners":0,"checkedAt":"2026-11-11T17:19:57.082064+00:00"},"partners":{"ai-vision":{"service":"ai-vision","url":"http://ai-vision-mock:9000","status":"ONLINE","statusCode":200,"latencyMs":44,"response":{"status":"ok","service":"ai-vision-mock","version":"0.5.0"}},"iot-ingestion":{"service":"iot-ingestion","url":"http://iot-mock:9000","status":"ONLINE","statusCode":200,"latencyMs":41,"response":{"status":"ok","service":"iot-ingestion-mock","version":"0.5.0"}},"access-gate":{"service":"access-gate","url":"http://gate-mock:9000","status":"ONLINE","statusCode":200,"latencyMs":45,"response":{"status":"ok","service":"access-gate-mock","version":"0.5.0"}},"analytics":{"service":"analytics","url":"http://analytics-mock:9000","status":"ONLINE","statusCode":200,"latencyMs":36,"response":{"status":"ok","service":"analytics-mock","version":"0.5.0"}},"notification":{"service":"notification","url":"http://notify-mock:9000","status":"ONLINE","statusCode":200,"latencyMs":33,"response":{"status":"ok","service":"notification-mock","version":"0.5.0"}}}}
+
+> fit4110-lab05-docker-compose-readiness@0.1.0 test:compose
+> newman run postman/collections/FIT4110_lab05_core_business.postman_collection.json -e postman/environments/FIT4110_lab05_local.postman_environment.json -r cli,junit,htmlextra --reporter-junit-export reports/newman-lab05-compose.xml --reporter-htmlextra-export reports/newman-lab05-compose.html
+
+(node:6264) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+newman
+
+FIT4110 Lab05 - Core Business Stack (LAN Plug-a-thon)
+
+□ 00_Health
+└ GET /health - Check service status
+  GET http://localhost:8001/health [200 OK, 248B, 42ms]
+  √  Status code is 200
+  √  Response has service status ok
+  √  Health reports active storage backend
+
+□ 01_Functional
+└ POST /alerts - Create alert (Happy path)
+  POST http://localhost:8001/alerts [201 Created, 465B, 25ms]
+  √  Status code is 201
+  √  Response contains created alert details
+
+└ GET /alerts - List alerts with pagination
+  GET http://localhost:8001/alerts?limit=10 [200 OK, 839B, 21ms]
+  √  Status code is 200
+  √  Response contains items array and pagination info
+
+└ GET /alerts/recent - Get recent alerts
+  GET http://localhost:8001/alerts/recent?limit=5 [200 OK, 795B, 17ms]
+  √  Status code is 200
+  √  Response contains items array
+
+└ GET /alerts/{alertId} - Get alert detail by ID
+  GET http://localhost:8001/alerts/0196fb3d-4ad7-7d1e-9f49-5d5148d2babc [200 OK, 448B, 14ms]
+  √  Status code is 200
+  √  Response contains alert object
+
+└ POST /access/check - Check realtime access policy
+  POST http://localhost:8001/access/check [200 OK, 370B, 52ms]
+  √  Status code is 200
+  √  Valid card at GATE-01 in working hours returns ALLOW
+
+└ GET /policies/access/{policyId} - Get access policy detail
+  GET http://localhost:8001/policies/access/POL-001 [200 OK, 478B, 12ms]
+  √  Status code is 200
+  √  Response contains policy details
+
+└ GET /decisions/{decisionId} - Get decision audit record
+  GET http://localhost:8001/decisions/0196fb3d-4ad7-7d1e-9f49-bbb148d2b002 [200 OK, 358B, 14ms]
+  √  Status code is 200
+  √  Response contains decision audit info
+
+└ POST /events - Ingest campus event
+  POST http://localhost:8001/events [201 Created, 228B, 16ms]
+  √  Status code is 201
+  √  Response confirms event accepted
+
+└ POST /access/check - DENY unauthorized gate (POL-001)
+  POST http://localhost:8001/access/check [200 OK, 370B, 62ms]
+  √  Status code is 200
+  √  Disallowed gate GATE-99 returns DENY / POLICY_DENY
+
+└ POST /alerts/{alertId}/resolve - Resolve created alert
+  POST http://localhost:8001/alerts/9977839d-72e6-4890-b177-751b01951962/resolve [200 OK, 494B, 20ms]
+  √  Status code is 200
+  √  Alert transitioned to RESOLVED with timestamp
+
+└ POST /vision/detection-result - Webhook risk HIGH creates Alert
+  POST http://localhost:8001/vision/detection-result [200 OK, 470B, 27ms]
+  √  Status code is 200
+  √  HIGH risk detection creates alert automatically
+
+└ POST /events - High temperature triggers Alert
+  POST http://localhost:8001/events [201 Created, 228B, 27ms]
+  √  Status code is 201
+  √  Overheat event accepted
+
+□ 02_Auth
+└ GET /alerts - Valid token is accepted
+  GET http://localhost:8001/alerts?limit=1 [200 OK, 562B, 13ms]
+  √  Valid token request returns 200
+
+└ POST /alerts - Missing token rejected on real service
+  POST http://localhost:8001/alerts [401 Unauthorized, 343B, 3ms]
+  √  Missing token returns 401 or 403
+
+└ POST /alerts - Invalid token rejected on real service
+  POST http://localhost:8001/alerts [401 Unauthorized, 343B, 3ms]
+  √  Invalid token returns 401 or 403
+
+□ 03_Negative
+└ POST /alerts - Missing required field (ProblemDetails)
+  POST http://localhost:8001/alerts [422 Unprocessable Entity, 533B, 3ms]
+  √  Invalid payload returns client error 400 or 422
+  √  Error response follows ProblemDetails schema
+
+└ POST /access/check - Invalid cardId pattern
+  POST http://localhost:8001/access/check [422 Unprocessable Entity, 478B, 3ms]
+  √  Pattern mismatch returns client error 400 or 422
+  √  ProblemDetails contains error detail
+
+└ GET /alerts/{alertId} - Non-existent UUID (404)
+  GET http://localhost:8001/alerts/00000000-0000-0000-0000-000000000000 [404 Not Found, 397B, 3ms]
+  √  Non-existent resource returns 404
+  √  ProblemDetails status field is client error (400-499)
+
+└ POST /access/check - Idempotency collision (409 Conflict)
+  POST http://localhost:8001/access/check [409 Conflict, 376B, 17ms]
+  √  Idempotency collision returns 409 Conflict
+  √  ProblemDetails status is 409
+
+└ GET /policies/access/{policyId} - Policy not found (404)
+  GET http://localhost:8001/policies/access/POL-NONEXISTENT [404 Not Found, 360B, 3ms]
+  √  Policy non-existent returns client error 404 or 422
+
+└ POST /access/check - Invalid direction enum (422)
+  POST http://localhost:8001/access/check [422 Unprocessable Entity, 458B, 3ms]
+  √  Invalid enum value returns 400 or 422
+
+└ POST /alerts - Simulated 500 Internal Server Error
+  POST http://localhost:8001/alerts [500 Internal Server Error, 347B, 3ms]
+  √  Server error returns 500
+  √  ProblemDetails status is 500
+
+□ 04_Boundary_Reliability
+└ GET /alerts - Boundary min limit=1
+  GET http://localhost:8001/alerts?limit=1 [200 OK, 562B, 11ms]
+  √  Min boundary limit=1 returns 200
+
+└ GET /alerts - Boundary max limit=100
+  GET http://localhost:8001/alerts?limit=100 [200 OK, 1.96kB, 12ms]
+  √  Max boundary limit=100 returns 200
+
+└ GET /alerts - Limit=101 out of range
+  GET http://localhost:8001/alerts?limit=101 [422 Unprocessable Entity, 355B, 2ms]
+  √  Out-of-bound limit=101 returns client error 400 or 422
+
+□ 05_Consumer_side_Smoke
+└ Core calls AI Vision mock - POST /integrations/ai-vision/face-match
+  POST http://localhost:8001/integrations/ai-vision/face-match [200 OK, 347B, 11ms]
+  √  Status code is 200
+  √  AI Vision mock returns MATCHED
+
+□ 06_Local_only_NonFunctional
+└ POST /access/check - Response time under 200ms SLA
+  POST http://localhost:8001/access/check [200 OK, 370B, 44ms]
+  √  Local service responds under 200ms SLA
+
+□ 07_Plug_a_thon_LAN_Integrations
+└ GET /integrations/status - Dashboard quét toàn mạng LAN
+  GET http://localhost:8001/integrations/status [200 OK, 1.29kB, 10ms]
+  √  Status code is 200
+  √  All 5 mock partners ONLINE in local compose mode
+
+└ GET /integrations/gate/cards/{cardId} - Tra cứu thẻ bên Access Gate
+  GET http://localhost:8001/integrations/gate/cards/RFID-2026-001 [200 OK, 430B, 10ms]
+  √  Status code is 200
+  √  Partner call succeeds in local mock mode
+
+└ GET /integrations/ai-vision/models - Xem model YOLOv8 của AI Vision
+  GET http://localhost:8001/integrations/ai-vision/models [200 OK, 441B, 10ms]
+  √  Status code is 200
+  √  Partner call succeeds in local mock mode
+
+└ POST /integrations/ai-vision/face-match - So khớp khuôn mặt AI Vision
+  POST http://localhost:8001/integrations/ai-vision/face-match [200 OK, 326B, 9ms]
+  √  Status code is 200
+  √  Partner call succeeds in local mock mode
+
+└ GET /integrations/analytics/health - Kiểm tra kết nối Analytics
+  GET http://localhost:8001/integrations/analytics/health [200 OK, 305B, 9ms]
+  √  Status code is 200
+  √  Analytics health ONLINE in local mock mode
+
+└ POST /integrations/notification/send - Gửi cảnh báo sang Notification
+  POST http://localhost:8001/integrations/notification/send [200 OK, 532B, 11ms]
+  √  Status code is 200
+  √  Notification delivered in local mock mode
+
+┌─────────────────────────┬──────────────────┬──────────────────┐
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               34 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               34 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │               35 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               60 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ total run duration: 3.3s                                      │
+├───────────────────────────────────────────────────────────────┤
+│ total data received: 12.4kB (approx)                          │
+├───────────────────────────────────────────────────────────────┤
+│ average response time: 15ms [min: 2ms, max: 62ms, s.d.: 14ms] │
+└───────────────────────────────────────────────────────────────┘
+
+=== LIVE POSTGRESQL PERSISTENCE & RESTART CHECK ===
+alerts=5, policies=1, decisions=4, events=5, idempotency_keys=3
+notify-mock delivered=5 notifications
+Post-restart GET /alerts?limit=3 -> total=5 persisted in PostgreSQL 15.
